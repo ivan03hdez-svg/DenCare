@@ -106,7 +106,7 @@ app.get('/ObtenerUsuarios', (req,res) =>{
     });
 });
 
-/*
+
 app.post('/Login', (req,res) => {
     const { Usuario_User, Usuario_Password } = req.body;
 
@@ -129,7 +129,6 @@ app.post('/Login', (req,res) => {
         });
     });
 });
-*/
 
 //INICIAR EL SERVIDOR
 app.listen(PORT, () =>{
