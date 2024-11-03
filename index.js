@@ -30,7 +30,6 @@ app.get('/', (req,res) => {
     res.send('Bienvenido a la API');
 });
 
-/*
 //Ruta para agregar usuarios
 app.post('/RegistroUsuario', (req, res) => {
     const {
@@ -47,7 +46,7 @@ app.post('/RegistroUsuario', (req, res) => {
     } = req.body;
 
     // Verificar si el correo ya existe 
-    const verificarEmail = SELECT PersonaId FROM tbl_persona WHERE Persona_Email = ?;
+    const verificarEmail = `SELECT PersonaId FROM tbl_persona WHERE Persona_Email = ?`;
     db.query(verificarEmail, [Persona_Email], (error, results) => {
         if (error) {
             return res.status(500).json({ error: 'Error al verificar el correo electrónico' });
@@ -71,7 +70,7 @@ app.post('/RegistroUsuario', (req, res) => {
                 }
                 const IdPersona = results.insertId;
                 // Insertar en tbl_usuarios
-                const sqlUsuario = INSERT INTO tbl_usuarios (Usuario_PersonaId, Usuario_User, Usuario_Password) VALUES (?, ?, ?);
+                const sqlUsuario = `INSERT INTO tbl_usuarios (Usuario_PersonaId, Usuario_User, Usuario_Password) VALUES (?, ?, ?)`;
                 db.query(sqlUsuario, [IdPersona, Usuario_User, Usuario_Password], (error) => {
                     if (error) {
                         return db.rollback(() => {
@@ -92,7 +91,6 @@ app.post('/RegistroUsuario', (req, res) => {
         });
     });
 });
-*/
 
 app.get('/ObtenerUsuarios', (req,res) =>{
     const query = 'Select * from tbl_persona INNER JOIN tbl_usuarios';  
