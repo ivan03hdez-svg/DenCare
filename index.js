@@ -8,12 +8,15 @@ const PORT = process.env.PORT || 3000;
 //Permitir la interpretacion de JSON en las solicitudes
 app.use(express.json());
 
+//mysql://root:qtVcwAfqztQfpeMLIEQmxlJFcHMojlRK@autorack.proxy.rlwy.net:38940/railway
+
 //Configuracion de la conexion a la BD
 const db = mysql.createConnection({
-    host: 'localhost',
+    host: 'autorack.proxy.rlwy.net',
     user: 'root',
-    password: '',
-    database: 'dentcare'
+    password: 'qtVcwAfqztQfpeMLIEQmxlJFcHMojlRK',
+    database: 'railway',
+    port: 38940
 });
 
 //Conexion a la BD
@@ -31,7 +34,29 @@ app.get('/', (req,res) => {
 });
 
 //Ruta para agregar usuarios
-app.post('/RegistroUsuario', (req, res) => {
+app.post('/RegistroUsuarios', (req,res) => {
+    const {
+        Persona_Nombre,
+        Persona_APaterno,
+        Persona_AMaterno,
+        Persona_GeneroId,
+        Persona_FecNac,
+        Persona_Telefono,
+        Persona_Email,
+        Persona_RolId,
+        Usuario_User,
+        Usuario_Password        
+    } = req.body;
+    
+});
+
+
+
+
+
+
+
+/*app.post('/RegistroUsuario', (req, res) => {
     const {
         Persona_Nombre,
         Persona_APaterno,
@@ -91,9 +116,10 @@ app.post('/RegistroUsuario', (req, res) => {
         });
     });
 });
+*/
 
 app.get('/ObtenerUsuarios', (req,res) =>{
-    const query = 'Select * from tbl_persona INNER JOIN tbl_usuarios';  
+    const query = 'Select * from Tbl_Persona INNER JOIN Tbl_Usuarios';  
     db.query(query, (err, results) => {
         if (err) {
             console.error('Error al obtener usuarios:', err);
