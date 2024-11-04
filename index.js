@@ -106,6 +106,7 @@ app.post('/Login', (req,res) => {
     db.query(sql, [Usuario_User, Usuario_Password], (error, results) => {
         if(error){ return res.status(500).json({error: 'Usuario no encontrado'}); }
         if(results.length == 0){ return res.status(401).json({error: 'Credenciales inválidas'}); }
+        const usuario = results[0];
         if(usuario.Usuario_Password !== Usuario_Password){
             return res.status(401).json({error: 'Contraseña incorrecta'});
         }
