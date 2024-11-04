@@ -52,14 +52,15 @@ app.post('/RegistroUsuarios', async (req, res) => {
         if(err){
             return res.status(500).json({error: 'Error al iniciar la Transaccion'})
         }
-        const sqlPersona = `INSERT INTO tbl_persona (Persona_Nombre, Persona_APaterno, Persona_AMaterno, Persona_GeneroId, Persona_FecNac, Persona_Telefono, Persona_Email, Persona_RolId, Persona_Status) 
+        const sqlPersona = `INSERT INTO Tbl_Persona (Persona_Nombre, Persona_APaterno, Persona_AMaterno, Persona_GeneroId, Persona_FecNac, Persona_Telefono, Persona_Email, Persona_RolId, Persona_Status) 
                             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)`;
         db.query(sqlPersona, [Persona_Nombre, Persona_APaterno, Persona_AMaterno, Persona_GeneroId, Persona_FecNac, Persona_Telefono, Persona_Email, Persona_RolId], (error, results) => {
             if(error){
-                return db.rollback(() => { res.status(500).json({ error: 'Error al registrar la persona' }); });
+                res.send(error);
+                return db.rollback(() => { res.status(500).json({ error: 'Error al registrar la persona'}); });
             }
             const IdPersona = results.insertId;
-            const sqlUsuario = `INSERT INTO tbl_usuarios (Usuario_PersonaId, Usuario_User, Usuario_Password) VALUES (?, ?, ?)`;
+            const sqlUsuario = `INSERT INTO Tbl_Usuarios (Usuario_PersonaId, Usuario_User, Usuario_Password) VALUES (?, ?, ?)`;
             db.query(sqlUsuario, [IdPersona, Usuario_User, Usuario_Password], (error) => {
                 if (error) {
                     return db.rollback(() => { res.status(500).json({ error: 'Error al registrar el usuario' }); });
@@ -82,8 +83,8 @@ app.get('/ObtenerUsuarios', (req,res) =>{
             console.error('Error al obtener usuarios:', err);
             res.status(500).json({ error: 'Error al obtener usuarios' });
         } else {
-            //res.json(results);
-            res.send('Hola');
+            res.json(results);
+            //res.send('Hola');
         }
     });
 });
