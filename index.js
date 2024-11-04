@@ -1,8 +1,10 @@
 const express = require('express');
 const mysql = require('mysql2');
+const bcrypt = require('bcrypt');
 
 //Instancia de Express
 const app = express();
+const saltRounds = 10;
 const PORT = process.env.PORT || 3000;
 
 //Permitir la interpretacion de JSON en las solicitudes
@@ -18,6 +20,12 @@ const db = mysql.createConnection({
     database: 'railway',
     port: 38940
 });
+
+//Funcion de Hasheo
+async function hashPassword(password) {
+    const hashedPass = await bcrypt.hash(password, saltRounds);
+    return hashPassword;
+}
 
 //Conexion a la BD
 db.connect((err) => {
@@ -68,18 +76,25 @@ app.post('/RegistroUsuarios', async (req, res) => {
                     return db.rollback(() => { res.status(500).json({ error: 'Error al registrar la persona'}); });
                 }
                 const IdPersona = results.insertId;
-                const sqlUsuario = `INSERT INTO Tbl_Usuarios (Usuario_PersonaId, Usuario_User, Usuario_Password) VALUES (?, ?, ?)`;
-                db.query(sqlUsuario, [IdPersona, Usuario_User, Usuario_Password], (error) => {
-                    if (error) {
-                        return db.rollback(() => { res.status(500).json({ error: 'Error al registrar el usuario' }); });
-                    }
-                    db.commit((err) => {
-                        if (err) {
-                            return db.rollback(() => { res.status(500).json({ error: 'Error al confirmar la transacción' }); });
+                try{
+                    const hashPassword = bcrypt.hash(Usuario_Password, saltRounds);
+                    const sqlUsuario = `INSERT INTO Tbl_Usuarios (Usuario_PersonaId, Usuario_User, Usuario_Password) VALUES (?, ?, ?)`;
+                    db.query(sqlUsuario, [IdPersona, Usuario_User, hashPassword], (error) => {
+                        if (error) {
+                            return db.rollback(() => { res.status(500).json({ error: 'Error al registrar el usuario' }); });
                         }
-                        res.json({ success: true, message: 'Usuario registrado exitosamente' });
+                        db.commit((err) => {
+                            if (err) {
+                                return db.rollback(() => { res.status(500).json({ error: 'Error al confirmar la transacción' }); });
+                            }
+                            res.json({ success: true, message: 'Usuario registrado exitosamente' });
+                        });
                     });
-                });
+                }catch(hashError){
+                    return db.rollback(() => {
+                        res.status(500).json({ error: 'Error al hashear la contraseña' });
+                    });
+                }
             });
         });        
     });
