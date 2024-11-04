@@ -48,31 +48,41 @@ app.post('/RegistroUsuarios', async (req, res) => {
         Usuario_Password        
     } = req.body;
 
-    db.beginTransaction((err) => {
-        if(err){
-            return res.status(500).json({error: 'Error al iniciar la Transaccion'})
+    const sqlCheckUsuario = 'SELECT u.Usuario_PersonaId, p.Persona_Nombre, ct.Rol_Nombre  FROM Tbl_Usuarios u INNER JOIN Tbl_Persona p ON ' +
+                            'u.Usuario_PersonaId = p.PersonaId INNER JOIN Tbl_Cat_Rol ct On ct.RolId = p.Persona_RolId WHERE Usuario_User = ? and Usuario_Password = ?';
+    db.query(sqlCheckUsuario, [Usuario_User, Usuario_Password], (error, results) => {
+        if (error) {
+            return res.status(500).json({ error: 'Error al verificar el usuario' });
         }
-        const sqlPersona = `INSERT INTO Tbl_Persona (Persona_Nombre, Persona_APaterno, Persona_AMaterno, Persona_GeneroId, Persona_FecNac, Persona_Telefono, Persona_Email, Persona_RolId, Persona_Status) 
-                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)`;
-        db.query(sqlPersona, [Persona_Nombre, Persona_APaterno, Persona_AMaterno, Persona_GeneroId, Persona_FecNac, Persona_Telefono, Persona_Email, Persona_RolId], (error, results) => {
-            if(error){
-                res.send(error);
-                return db.rollback(() => { res.status(500).json({ error: 'Error al registrar la persona'}); });
+        if (results.length > 0) {
+            return res.status(400).json({ error: 'El usuario ya existe' });
+        }
+        db.beginTransaction((err) => {
+            if(err){
+                return res.status(500).json({error: 'Error al iniciar la Transaccion'})
             }
-            const IdPersona = results.insertId;
-            const sqlUsuario = `INSERT INTO Tbl_Usuarios (Usuario_PersonaId, Usuario_User, Usuario_Password) VALUES (?, ?, ?)`;
-            db.query(sqlUsuario, [IdPersona, Usuario_User, Usuario_Password], (error) => {
-                if (error) {
-                    return db.rollback(() => { res.status(500).json({ error: 'Error al registrar el usuario' }); });
+            const sqlPersona = `INSERT INTO Tbl_Persona (Persona_Nombre, Persona_APaterno, Persona_AMaterno, Persona_GeneroId, Persona_FecNac, Persona_Telefono, Persona_Email, Persona_RolId, Persona_Status) 
+                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)`;
+            db.query(sqlPersona, [Persona_Nombre, Persona_APaterno, Persona_AMaterno, Persona_GeneroId, Persona_FecNac, Persona_Telefono, Persona_Email, Persona_RolId], (error, results) => {
+                if(error){
+                    res.send(error);
+                    return db.rollback(() => { res.status(500).json({ error: 'Error al registrar la persona'}); });
                 }
-                db.commit((err) => {
-                    if (err) {
-                        return db.rollback(() => { res.status(500).json({ error: 'Error al confirmar la transacción' }); });
+                const IdPersona = results.insertId;
+                const sqlUsuario = `INSERT INTO Tbl_Usuarios (Usuario_PersonaId, Usuario_User, Usuario_Password) VALUES (?, ?, ?)`;
+                db.query(sqlUsuario, [IdPersona, Usuario_User, Usuario_Password], (error) => {
+                    if (error) {
+                        return db.rollback(() => { res.status(500).json({ error: 'Error al registrar el usuario' }); });
                     }
-                    res.json({ success: true, message: 'Usuario registrado exitosamente' });
+                    db.commit((err) => {
+                        if (err) {
+                            return db.rollback(() => { res.status(500).json({ error: 'Error al confirmar la transacción' }); });
+                        }
+                        res.json({ success: true, message: 'Usuario registrado exitosamente' });
+                    });
                 });
             });
-        });
+        });        
     });
 });
 
