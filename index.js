@@ -108,7 +108,7 @@ app.get('/ObtenerUsuarios', (req,res) =>{
 app.post('/Login', (req,res) => {
     const { Usuario_User, Usuario_Password } = req.body;
 
-    const sql = ` SELECT Usuario_PersonaId, Persona_Nombre, Usuario_Password  FROM tbl_usuarios INNER JOIN tbl_persona WHERE Usuario_User = ?`;
+    const sql = `SELECT Usuario_PersonaId, Persona_Nombre, Usuario_Password  FROM tbl_usuarios INNER JOIN tbl_persona WHERE Usuario_User = ?`;
     db.query(sql, [Usuario_User], (error, results) => {
         if(error){
             return res.status(500).json({error: 'Usuario no encontrado'});
