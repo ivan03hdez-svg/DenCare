@@ -29,12 +29,12 @@ db.connect((err) => {
     }
 });
 
-app.get('/', (req,res) => {
+app.get('/', (req, res) => {
     res.send('Bienvenido a la API');
 });
 
 //Ruta para agregar usuarios
-app.post('/RegistroUsuarios', (req,res) => {
+app.post('/RegistroUsuarios', async (req, res) => {
     const {
         Persona_Nombre,
         Persona_APaterno,
@@ -47,76 +47,33 @@ app.post('/RegistroUsuarios', (req,res) => {
         Usuario_User,
         Usuario_Password        
     } = req.body;
-    
-});
 
-
-
-
-
-
-
-/*app.post('/RegistroUsuario', (req, res) => {
-    const {
-        Persona_Nombre,
-        Persona_APaterno,
-        Persona_AMaterno,
-        Persona_GeneroId,
-        Persona_FecNac,
-        Persona_Telefono,
-        Persona_Email,
-        Persona_RolId,
-        Usuario_User,
-        Usuario_Password
-    } = req.body;
-
-    // Verificar si el correo ya existe 
-    const verificarEmail = `SELECT PersonaId FROM tbl_persona WHERE Persona_Email = ?`;
-    db.query(verificarEmail, [Persona_Email], (error, results) => {
-        if (error) {
-            return res.status(500).json({ error: 'Error al verificar el correo electrónico' });
+    db.beginTransaction((err) => {
+        if(err){
+            return res.status(500).json({error: 'Error al iniciar la Transaccion'})
         }
-        if (results.length > 0) {
-            return res.status(409).json({ error: 'El correo electrónico ya está registrado' });
-        }
-        // Comenzar transacción
-        db.beginTransaction((err) => {
-            if (err) {
-                return res.status(500).json({ error: 'Error al iniciar transacción' });
+        const sqlPersona = `INSERT INTO tbl_persona (Persona_Nombre, Persona_APaterno, Persona_AMaterno, Persona_GeneroId, Persona_FecNac, Persona_Telefono, Persona_Email, Persona_RolId, Persona_Status) 
+                            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)`;
+        db.query(sqlPersona, [Persona_Nombre, Persona_APaterno, Persona_AMaterno, Persona_GeneroId, Persona_FecNac, Persona_Telefono, Persona_Email, Persona_RolId], (error, results) => {
+            if(error){
+                return db.rollback(() => { res.status(500).json({ error: 'Error al registrar la persona' }); });
             }
-            // Insertar en tbl_persona
-            const sqlPersona = `INSERT INTO tbl_persona (Persona_Nombre, Persona_APaterno, Persona_AMaterno, Persona_GeneroId, Persona_FecNac, Persona_Telefono, Persona_Email, Persona_RolId, Persona_Status) 
-                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)`;
-            db.query(sqlPersona, [Persona_Nombre, Persona_APaterno, Persona_AMaterno, Persona_GeneroId, Persona_FecNac, Persona_Telefono, Persona_Email, Persona_RolId], (error, results) => {
+            const IdPersona = results.insertId;
+            const sqlUsuario = `INSERT INTO tbl_usuarios (Usuario_PersonaId, Usuario_User, Usuario_Password) VALUES (?, ?, ?)`;
+            db.query(sqlUsuario, [IdPersona, Usuario_User, Usuario_Password], (error) => {
                 if (error) {
-                    return db.rollback(() => {
-                        res.status(500).json({ error: 'Error al registrar la persona' });
-                    });
+                    return db.rollback(() => { res.status(500).json({ error: 'Error al registrar el usuario' }); });
                 }
-                const IdPersona = results.insertId;
-                // Insertar en tbl_usuarios
-                const sqlUsuario = `INSERT INTO tbl_usuarios (Usuario_PersonaId, Usuario_User, Usuario_Password) VALUES (?, ?, ?)`;
-                db.query(sqlUsuario, [IdPersona, Usuario_User, Usuario_Password], (error) => {
-                    if (error) {
-                        return db.rollback(() => {
-                            res.status(500).json({ error: 'Error al registrar el usuario' });
-                        });
+                db.commit((err) => {
+                    if (err) {
+                        return db.rollback(() => { res.status(500).json({ error: 'Error al confirmar la transacción' }); });
                     }
-                    // Confirmar transacción
-                    db.commit((err) => {
-                        if (err) {
-                            return db.rollback(() => {
-                                res.status(500).json({ error: 'Error al confirmar la transacción' });
-                            });
-                        }
-                        res.json({ exito: 'Usuario registrado exitosamente' });
-                    });
+                    res.json({ success: true, message: 'Usuario registrado exitosamente' });
                 });
             });
         });
     });
 });
-*/
 
 app.get('/ObtenerUsuarios', (req,res) =>{
     const query = 'Select * from Tbl_Persona INNER JOIN Tbl_Usuarios';  
@@ -134,8 +91,7 @@ app.get('/ObtenerUsuarios', (req,res) =>{
 
 app.post('/Login', (req,res) => {
     const { Usuario_User, Usuario_Password } = req.body;
-
-    const sql = `SELECT Usuario_PersonaId, Persona_Nombre, Usuario_Password  FROM tbl_usuarios INNER JOIN tbl_persona WHERE Usuario_User = ?`;
+    const sql = `SELECT Usuario_PersonaId, Persona_Nombre, Usuario_Password  FROM Tbl_Usuarios INNER JOIN Tbl_Persona WHERE Usuario_User = ?`;
     db.query(sql, [Usuario_User], (error, results) => {
         if(error){
             return res.status(500).json({error: 'Usuario no encontrado'});
