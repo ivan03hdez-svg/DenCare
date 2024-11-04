@@ -100,23 +100,13 @@ app.get('/ObtenerUsuarios', (req,res) =>{
 
 
 app.post('/Login', (req,res) => {
-    const { Usuario_User, Usuario_Password } = req.body;
-    const sql = 'SELECT u.Usuario_PersonaId, p.Persona_Nombre, ct.Rol_Nombre  FROM Tbl_Usuarios u INNER JOIN Tbl_Persona p ON ' +
-                'u.Usuario_PersonaId = p.PersonaId INNER JOIN Tbl_Cat_Rol ct On ct.RolId = p.Persona_RolId WHERE Usuario_User = ? and Usuario_Password = ?';
-    db.query(sql, [Usuario_User, Usuario_Password], (error, results) => {
-        if(error){ return res.status(500).json({error: 'Usuario no encontrado'}); }
-        if(results.length == 0){ return res.status(401).json({error: 'Credenciales inválidas'}); }
-        const usuario = results[0];
-        if(usuario.Usuario_Password !== Usuario_Password){
-            return res.status(401).json({error: 'Contraseña incorrecta'});
-        }
-        res.json({
-            succes: true,
-            mensaje: 'Inicio de sesion exitoso',
-            usuario: usuario.Persona_Nombre,
-            tipo: usuario.Rol_Nombre
-        });
-    });
+    const { 
+        Usuario_User, 
+        Usuario_Password 
+    } = req.body;
+    const query = `SELECT u.Usuario_PersonaId, p.Persona_Nombre, ct.Rol_Nombre FROM Tbl_Usuarios u INNER JOIN Tbl_Persona p ON u.Usuario_PersonaId = p.PersonaId 
+                INNER JOIN Tbl_Cat_Rol ct On ct.RolId = p.Persona_RolId WHERE Usuario_User = ? and Usuario_Password = ?`;
+    
 });
 
 //INICIAR EL SERVIDOR
