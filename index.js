@@ -48,8 +48,7 @@ app.post('/RegistroUsuarios', async (req, res) => {
         Usuario_Password        
     } = req.body;
 
-    const sqlCheckUsuario = 'SELECT u.Usuario_PersonaId, p.Persona_Nombre, ct.Rol_Nombre  FROM Tbl_Usuarios u INNER JOIN Tbl_Persona p ON ' +
-                            'u.Usuario_PersonaId = p.PersonaId INNER JOIN Tbl_Cat_Rol ct On ct.RolId = p.Persona_RolId WHERE Usuario_User = ? and Usuario_Password = ?';
+    const sqlCheckUsuario = 'SELECT u.Usuario_User, u.Usuario_Password FROM Tbl_Usuarios WHERE Usuario_User = ? and Usuario_Password = ?';
     db.query(sqlCheckUsuario, [Usuario_User, Usuario_Password], (error, results) => {
         if (error) {
             return res.status(500).json({ error: 'Error al verificar el usuario' });
@@ -87,7 +86,7 @@ app.post('/RegistroUsuarios', async (req, res) => {
 });
 
 app.get('/ObtenerUsuarios', (req,res) =>{
-    const query = 'Select * from Tbl_Persona INNER JOIN Tbl_Usuarios';  
+    const query = 'SELECT * FROM Tbl_Persona p INNER JOIN Tbl_Usuarios u ON p.PersonaId = u.Usuario_PersonaId; ';  
     db.query(query, (err, results) => {
         if (err) {
             console.error('Error al obtener usuarios:', err);
@@ -102,7 +101,8 @@ app.get('/ObtenerUsuarios', (req,res) =>{
 
 app.post('/Login', (req,res) => {
     const { Usuario_User, Usuario_Password } = req.body;
-    const sql = `SELECT Usuario_PersonaId, Persona_Nombre, Usuario_Password  FROM Tbl_Usuarios INNER JOIN Tbl_Persona WHERE Usuario_User = ?`;
+    const sql = 'SELECT u.Usuario_PersonaId, p.Persona_Nombre, ct.Rol_Nombre  FROM Tbl_Usuarios u INNER JOIN Tbl_Persona p ON ' +
+                'u.Usuario_PersonaId = p.PersonaId INNER JOIN Tbl_Cat_Rol ct On ct.RolId = p.Persona_RolId WHERE Usuario_User = ? and Usuario_Password = ?';
     db.query(sql, [Usuario_User], (error, results) => {
         if(error){
             return res.status(500).json({error: 'Usuario no encontrado'});
@@ -117,7 +117,8 @@ app.post('/Login', (req,res) => {
         res.json({
             succes: true,
             mensaje: 'Inicio de sesion exitoso',
-            usuario: usuario.Persona_Nombre
+            usuario: usuario.Persona_Nombre,
+            tipo: usuario.Rol_Nombre
         });
     });
 });
