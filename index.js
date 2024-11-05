@@ -115,10 +115,10 @@ app.get('/ObtenerUsuarios', (req,res) =>{
     });
 });
 
-app.get('/ObtenerUsuariosById', (req, res) => {
-    const usuarioId = req.id;
+app.get('/ObtenerUsuariosById/:id', (req, res) => {
+    const usuarioId = req.params.id; // Obtener el ID desde los parámetros de la URL
     const query = `SELECT * FROM Tbl_Persona p INNER JOIN Tbl_Usuarios u ON p.PersonaId = u.Usuario_PersonaId 
-                WHERE u.UsuarioId = ?`;
+                    WHERE u.UsuarioId = ?`;
     db.query(query, [usuarioId], (err, results) => {
         if (err) {
             console.error('Error al obtener usuarios:', err);
@@ -130,6 +130,7 @@ app.get('/ObtenerUsuariosById', (req, res) => {
         }
     });
 });
+
 
 
 
