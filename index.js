@@ -55,7 +55,7 @@ app.post('/RegistroUsuarios', async (req, res) => {
         Usuario_Password        
     } = req.body;
 
-    const sqlCheckUsuario = 'SELECT u.Usuario_User, u.Usuario_Password FROM Tbl_Usuarios u WHERE Usuario_User = ? and Usuario_Password = ?';
+    const sqlCheckUsuario = 'SELECT u.Usuario_User, u.Usuario_Password FROM Tbl_Usuarios u WHERE u.Usuario_User = ? and u.Usuario_Password = ?';
     db.query(sqlCheckUsuario, [Usuario_User, Usuario_Password], async (error, results) => {
         if (error) {
             return res.status(500).json({ error: 'Error al verificar el usuario' });
