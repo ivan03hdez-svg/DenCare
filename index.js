@@ -56,7 +56,7 @@ app.post('/RegistroUsuarios', async (req, res) => {
     } = req.body;
 
     const sqlCheckUsuario = 'SELECT u.Usuario_User, u.Usuario_Password FROM Tbl_Usuarios WHERE Usuario_User = ? and Usuario_Password = ?';
-    db.query(sqlCheckUsuario, [Usuario_User, Usuario_Password], async (error, results) => {  // Cambia aquí
+    db.query(sqlCheckUsuario, [Usuario_User, Usuario_Password], async (error, results) => {
         if (error) {
             return res.status(500).json({ error: 'Error al verificar el usuario' });
         }
@@ -115,11 +115,10 @@ app.get('/ObtenerUsuarios', (req,res) =>{
     });
 });
 
-app.get('/ObtenerUsuarios/:id', (req, res) => {
-    const usuarioId = req.params.id; // Obtener el ID del parámetro de la URL
+app.get('/ObtenerUsuariosById', (req, res) => {
+    const usuarioId = req.id;
     const query = `SELECT * FROM Tbl_Persona p INNER JOIN Tbl_Usuarios u ON p.PersonaId = u.Usuario_PersonaId 
                 WHERE u.UsuarioId = ?`;
-
     db.query(query, [usuarioId], (err, results) => {
         if (err) {
             console.error('Error al obtener usuarios:', err);
