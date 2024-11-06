@@ -103,14 +103,14 @@ app.post('/RegistroUsuarios', async (req, res) => {
 
 app.post('/Login', async (req, res) => {
     const { Usuario_User, Usuario_Password } = req.body;
-    const query = `SELECT p.PersonaId, u.Usuario_Password, p.Persona_Nombre, ct.Rol_Nombre FROM Tbl_Usuarios u INNER JOIN Tbl_Persona p 
+    const query = `SELECT p.PersonaId, u.Usuario_PersonaId, u.Usuario_Password, p.Persona_Nombre, ct.Rol_Nombre FROM Tbl_Usuarios u INNER JOIN Tbl_Persona p 
                     ON u.Usuario_PersonaId = p.PersonaId INNER JOIN Tbl_Cat_Rol ct ON ct.RolId = p.Persona_RolId WHERE Usuario_User = ?`;
     db.query(query, [Usuario_User], async (err, results) => {
         if (err) {
             console.error('Error al realizar la consulta de login:', err);
             return res.status(500).json({ error: 'Error al procesar la solicitud' });
         }
-        //Si el usuario existe
+        //Si el usuario no existe
         if (results.length === 0) {
             return res.status(400).json({ error: 'Usuario no encontrado' });
         }
@@ -130,7 +130,7 @@ app.post('/Login', async (req, res) => {
     });
 });
 
-app.get('/ObtenerUsuarios', (req,res) =>{
+app.get('/obtenerUsuarios', (req,res) =>{
     const query = 'SELECT * FROM Tbl_Persona p INNER JOIN Tbl_Usuarios u ON p.PersonaId = u.Usuario_PersonaId; ';  
     db.query(query, (err, results) => {
         if (err) {
@@ -143,7 +143,7 @@ app.get('/ObtenerUsuarios', (req,res) =>{
     });
 });
 
-app.get('/ObtenerUsuariosById/:id', (req, res) => {
+app.get('/obtenerUsuariosById/:id', (req, res) => {
     const usuarioId = req.params.id; // Obtener el ID desde los parámetros de la URL
     const query = `SELECT p.Persona_Nombre AS Nombre, CONCAT(p.Persona_APaterno,' ', p.Persona_AMaterno) AS Apellido, g.Genero_Nombre AS Genero, p.Persona_FecNac AS 'Fecha Nacimiento',
                     p.Persona_Telefono AS Telefono, p.Persona_Email AS Correo, u.Usuario_User AS Usuario, u.Usuario_Password AS Contraseña 
