@@ -101,40 +101,6 @@ app.post('/RegistroUsuarios', async (req, res) => {
     });
 });
 
-
-app.get('/ObtenerUsuarios', (req,res) =>{
-    const query = 'SELECT * FROM Tbl_Persona p INNER JOIN Tbl_Usuarios u ON p.PersonaId = u.Usuario_PersonaId; ';  
-    db.query(query, (err, results) => {
-        if (err) {
-            console.error('Error al obtener usuarios:', err);
-            res.status(500).json({ error: 'Error al obtener usuarios' });
-        } else {
-            res.json(results);
-            //res.send('Hola');
-        }
-    });
-});
-
-app.get('/ObtenerUsuariosById/:id', (req, res) => {
-    const usuarioId = req.params.id; // Obtener el ID desde los parámetros de la URL
-    const query = `SELECT * FROM Tbl_Persona p INNER JOIN Tbl_Usuarios u ON p.PersonaId = u.Usuario_PersonaId 
-                    WHERE u.UsuarioId = ?`;
-    db.query(query, [usuarioId], (err, results) => {
-        if (err) {
-            console.error('Error al obtener usuarios:', err);
-            res.status(500).json({ error: 'Error al obtener usuarios' });
-        } else if (results.length === 0) {
-            res.status(404).json({ error: 'Usuario no encontrado' });
-        } else {
-            res.json(results);
-        }
-    });
-});
-
-
-
-
-
 app.post('/Login', async (req, res) => {
     const { Usuario_User, Usuario_Password } = req.body;
 
@@ -165,6 +131,64 @@ app.post('/Login', async (req, res) => {
     });
 });
 
+app.get('/ObtenerUsuarios', (req,res) =>{
+    const query = 'SELECT * FROM Tbl_Persona p INNER JOIN Tbl_Usuarios u ON p.PersonaId = u.Usuario_PersonaId; ';  
+    db.query(query, (err, results) => {
+        if (err) {
+            console.error('Error al obtener usuarios:', err);
+            res.status(500).json({ error: 'Error al obtener usuarios' });
+        } else {
+            res.json(results);
+            //res.send('Hola');
+        }
+    });
+});
+
+app.get('/ObtenerUsuariosById/:id', (req, res) => {
+    const usuarioId = req.params.id; // Obtener el ID desde los parámetros de la URL
+    const query = `SELECT p.Persona_Nombre AS Nombre, CONCAT(p.Persona_APaterno,' ', p.Persona_AMaterno) AS Apellido, g.Genero_Nombre AS Genero, p.Persona_FecNac AS 'Fecha Nacimiento',
+                    p.Persona_Telefono AS Telefono, p.Persona_Email AS Correo, u.Usuario_User AS Usuario, u.Usuario_Password AS Contraseña 
+                    FROM Tbl_Persona p INNER JOIN Tbl_Usuarios u ON u.Usuario_PersonaId = p.PersonaId INNER JOIN Tbl_Cat_Generos g ON p.Persona_GeneroId = g.GeneroId
+                    WHERE u.UsuarioId = ?`;
+    db.query(query, [usuarioId], (err, results) => {
+        if (err) {
+            console.error('Error al obtener usuarios:', err);
+            res.status(500).json({ error: 'Error al obtener usuarios' });
+        } else if (results.length === 0) {
+            res.status(404).json({ error: 'Usuario no encontrado' });
+        } else {
+            res.json(results);
+        }
+    });
+});
+
+app.post('/ModificarUsuario', async (req, res) =>{
+    const {
+        PersonaId,
+        NewNombre,
+        NewAPaterno,
+        NewAMaterno,
+        NewGeneroId,
+        
+    } = req.body;
+    try{
+        const hashedPass = await bcrypt.hash(Usuario_Password, saltRounds);
+
+        const query = ``;
+    }catch(hashError){
+        res.status(500).send({ error: "Error al actualizar la contraseña"})
+    }
+
+});
+
+/*
+Nombre: "Fernando"
+Apellido: "Garcia Torres"
+Genero: "Masculino"
+Fecha Nacimiento: "2004-02-17T06:00:00.000Z"
+Telefono: "5563251895"
+Correo: "FernandoGT@gmail.com"
+*/
 
 //INICIAR EL SERVIDOR
 app.listen(PORT, () =>{
