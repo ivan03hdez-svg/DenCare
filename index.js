@@ -103,7 +103,7 @@ app.post('/RegistroUsuarios', async (req, res) => {
 
 app.post('/Login', async (req, res) => {
     const { Usuario_User, Usuario_Password } = req.body;
-    const query = `SELECT p.PersonaId, u.Usuario_PersonaId, u.Usuario_Password, p.Persona_Nombre, ct.Rol_Nombre FROM Tbl_Usuarios u INNER JOIN Tbl_Persona p 
+    const query = `SELECT p.PersonaId, u.Usuario_Password, p.Persona_Nombre, ct.Rol_Nombre FROM Tbl_Usuarios u INNER JOIN Tbl_Persona p 
                     ON u.Usuario_PersonaId = p.PersonaId INNER JOIN Tbl_Cat_Rol ct ON ct.RolId = p.Persona_RolId WHERE Usuario_User = ?`;
     db.query(query, [Usuario_User], async (err, results) => {
         if (err) {
@@ -124,7 +124,6 @@ app.post('/Login', async (req, res) => {
         res.json({
             success: true,
             PersonaId: user.PersonaId,
-            UsuarioId: user.Usuario_PersonaId,
             Nombre: user.Persona_Nombre,
             Rol: user.Rol_Nombre
         });
