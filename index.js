@@ -43,34 +43,31 @@ app.get('/', (req, res) => {
 //Ruta para agregar usuarios
 app.post('/RegistroUsuarios', async (req, res) => {
     const {
-        Persona_Nombre,
-        Persona_APaterno,
-        Persona_AMaterno,
-        Persona_GeneroId,
-        Persona_FecNac,
-        Persona_Telefono,
-        Persona_Email,
-        Persona_RolId,
-        Usuario_User,
-        Usuario_Password        
+        Nombre,
+        APaterno,
+        AMaterno,
+        GeneroId,
+        FecNac,
+        Telefono,
+        Email,
+        RolId,
+        User,
+        Password
     } = req.body;
-
-    const sqlCheckUsuario = 'SELECT u.Usuario_User, u.Usuario_Password FROM Tbl_Usuarios u WHERE u.Usuario_User = ? and u.Usuario_Password = ?';
-    db.query(sqlCheckUsuario, [Usuario_User, Usuario_Password], async (error, results) => {
-        if (error) {
-            return res.status(500).json({ error: 'Error al verificar el usuario' });
-        }
+    //Verificar si ya existe el usuario
+    const sqlCheckUsuario = 'SELECT u.Usuario_User FROM Tbl_Usuarios u WHERE u.Usuario_User = ?';
+    db.query(sqlCheckUsuario, [User], async (error, results) => {
         if (results.length > 0) {
             return res.status(400).json({ error: 'El usuario ya existe' });
         }
         
-        db.beginTransaction(async (err) => { 
+        db.beginTransaction(async (err) => {
             if(err){
                 return res.status(500).json({error: 'Error al iniciar la Transaccion'})
             }
             const sqlPersona = `INSERT INTO Tbl_Persona (Persona_Nombre, Persona_APaterno, Persona_AMaterno, Persona_GeneroId, Persona_FecNac, Persona_Telefono, Persona_Email, Persona_RolId, Persona_Status) 
-                                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)`;
-            db.query(sqlPersona, [Persona_Nombre, Persona_APaterno, Persona_AMaterno, Persona_GeneroId, Persona_FecNac, Persona_Telefono, Persona_Email, Persona_RolId], async (error, results) => {  // Cambia aquí
+                                VALUES (?,?,?,?,?,?,?,?,1)`;
+            db.query(sqlPersona, [Nombre,APaterno,AMaterno,GeneroId,FecNac,Telefono,Email,RolId], async (error, results) => {
                 if(error){
                     return db.rollback(() => {
                         res.status(500).json({ error: 'Error al registrar la persona' });
@@ -78,11 +75,13 @@ app.post('/RegistroUsuarios', async (req, res) => {
                 }
                 const IdPersona = results.insertId;
                 try{
-                    const hashedPassword = await hashPassword(Usuario_Password);
+                    const hashedPassword = await hashPassword(Password);
                     const sqlUsuario = `INSERT INTO Tbl_Usuarios (Usuario_PersonaId, Usuario_User, Usuario_Password) VALUES (?, ?, ?)`;
-                    db.query(sqlUsuario, [IdPersona, Usuario_User, hashedPassword], (error) => {
+                    db.query(sqlUsuario, [IdPersona, User, hashedPassword], (error) => {
                         if (error) {
-                            return db.rollback(() => { res.status(500).json({ error: 'Error al registrar el usuario' }); });
+                            return db.rollback(() => { 
+                                res.status(500).json({ error: 'Error al registrar el usuario' }); 
+                            });
                         }
                         db.commit((err) => {
                             if (err) {
@@ -131,7 +130,17 @@ app.post('/Login', async (req, res) => {
 });
 
 app.get('/obtenerUsuarios', (req,res) =>{
-    const query = 'SELECT * FROM Tbl_Persona p INNER JOIN Tbl_Usuarios u ON p.PersonaId = u.Usuario_PersonaId; ';  
+    const query = `SELECT 
+                    CONCAT(p.Persona_Nombre,' ',p.Persona_APaterno,' ',p.Persona_AMaterno) AS Nombre, 
+                    g.Genero_Nombre AS Genero, 
+                    DATE_FORMAT(Persona_FecNac, '%d-%m-%Y') AS Nacimiento,
+                    p.Persona_Telefono AS Telefono,
+                    p.Persona_Email AS Correo,
+                    u.Usuario_User AS Usuario,
+                    r.Rol_Nombre AS Tipo
+                    FROM Tbl_Persona p INNER JOIN Tbl_Usuarios u ON p.PersonaId = u.Usuario_PersonaId
+                    INNER JOIN Tbl_Cat_Generos g ON p.Persona_GeneroId = GeneroId
+                    INNER JOIN Tbl_Cat_Rol r ON p.Persona_RolId = RolId;`;
     db.query(query, (err, results) => {
         if (err) {
             console.error('Error al obtener usuarios:', err);
@@ -173,11 +182,62 @@ app.post('/ModificarUsuario', async (req, res) =>{
     } = req.body;
     try{
         const hashedPass = await bcrypt.hash(NewPassword, saltRounds);
-        const query = ``;
+        db.beginTransaction(async (err) =>{
+            const updatePersona = `UPDATE Tbl_Persona SET Persona_Nombre = ?, Persona_APaterno = ?, Persona_AMaterno = ?, Persona_Telefono = ?, Persona_Email = ? 
+                                    WHERE PersonaId = ?`;
+            db.query(updatePersona, [NewNombre, NewAPaterno, NewAMaterno, NewTelefono, NewCorreo, PersonaId], async (err, results) => {
+            if(err){
+                return db.rollback(() => {
+                    res.status(500).json({ error: 'Error al registrar la persona' });
+                });
+            }
+
+            const updateUser = `UPDATE Tbl_Usuarios SET Usuario_Password = ? WHERE UsuarioId = ?`;
+            db.query(updateUser, [hashedPass,PersonaId], async (err, results) => {
+                if(err){
+                    return db.rollback(() => {
+                        res.status(500).json({ error: 'Error al registrar la persona' });
+                    });
+                }
+                db.commit((err) => {
+                    if (err) {
+                        return db.rollback(() => {
+                            res.status(500).json({ error: 'Error al confirmar la transacción' });
+                        });
+                    }
+                    res.status(200).json({ message: 'Datos actualizados exitosamente.' });
+                });
+            });
+
+
+            });
+        });
     }catch(hashError){
         res.status(500).send({ error: "Error al actualizar la contraseña"})
     }
 });
+
+//GENERAR CITA
+app.post('/generarCita', async (req, res) =>{
+    const {
+        usuarioId,
+        medicoId,
+        fecha,
+        hora,
+        motivo,
+        estadoId
+    } = req.body;
+
+    const Cita = `INSERT INTO Tbl_Citas (Cita_PacienteId, Cita_MedicoId, Cita_Fecha, Cita_Hora, Cita_Motivo, Cita_EstadoId) VALUES (?,?,?,?,?,?)`;
+    db.query(Cita, [usuarioId, medicoId, fecha, hora, motivo, estadoId], async (error, results) => {
+        if(error){
+            return db.rollback(() => { res.status(500).json({ error: 'Error al ralizar la cita' }); });
+        }
+        res.status(200).json({ success: true, message: 'Cita realizada' })
+    });
+});
+//CHAT
+//
 
 //INICIAR EL SERVIDOR
 app.listen(PORT, () =>{
