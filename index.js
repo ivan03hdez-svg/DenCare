@@ -96,7 +96,7 @@ app.post("/Login", async (req, res) => {
     }
     res.json({
       success: true,
-      PersonaId: user.PersonaId,
+      UsuarioId: user.Persona_UsuarioId,
       Nombre: user.Persona_Nombre,
       Rol: user.Rol_Nombre,
     });
@@ -171,12 +171,12 @@ app.post("/generarCita", async (req, res) => {
     usuarioId, 
     medicoId, 
     fecha, 
-    servicioId, 
-    estadoId
+    hora,
+    servicioId
   } = req.body;
-  const Cita = `INSERT INTO Tbl_Citas (Cita_PacienteId, Cita_MedicoId, Cita_Fecha, Cita_ServicioId, Cita_EstadoId) VALUES (?,?,?,?,?)`;
+  const Cita = `INSERT INTO Tbl_Citas (Cita_PacienteId, Cita_MedicoId, Cita_Fecha, Cita_Hora, Cita_ServicioId, Cita_EstadoId) VALUES (?,?,?,?,?,?)`;
   try{
-    await db.query(Cita, [usuarioId, medicoId, fecha, servicioId, estadoId]);
+    await db.query(Cita, [usuarioId, medicoId, fecha, hora, servicioId, 3]);
     res.status(200).json({ succes:true, message: "Cita realizada" });
   }catch(error){
     await db.rollback();
