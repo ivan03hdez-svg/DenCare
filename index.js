@@ -184,10 +184,57 @@ app.post("/generarCita", async (req, res) => {
   }
 });
 
+//ENVIAR MENSAJE
+app.post('/enviarMsj', async (req, res) => {
+  const { 
+    emisor_id, 
+    receptor_id, 
+    mensaje 
+  } = req.body;
+
+  if (!emisor_id || !receptor_id || !mensaje) {
+    return res.status(400).send({ success: false, message: 'Todos los campos son obligatorios.' });
+  }
+  const sqlEnviar = 'INSERT INTO Tbl_Mensajes (Mensaje_RemitenteId, Mensaje_DestinatarioId, Mensaje_Text, Mensaje_FecEnvio) VALUES (?, ?, ?, NOW())';
+try {
+    const [result] = await db.query(sqlEnviar, [emisor_id, receptor_id, mensaje]);
+    res.send({ success: true, message: 'Mensaje enviado con éxito.', mensaje_id: result.insertId });
+  } catch (error) {
+    await db.rollback();
+    res.status(500).json({ success: false, message: 'Error al enviar el mensaje.' });
+  }
+});
+
+//LEER EL MENSAJE
+app.post('/leerMsj', async (req, res) => {
+  const { 
+    usuario_id, 
+    tipo //enviados o recibidos
+  } = req.body;
+  if (!usuario_id || !tipo) {
+    return res.status(400).send({ success: false, message: 'Faltan parámetros.' });
+  }
+  let sqlLeerMensajes;
+  if (tipo === 'enviados') {
+    sqlLeerMensajes = `SELECT u_emisor.Usuario_User AS Envia, u_receptor.Usuario_User AS Recibe, m.Mensaje_Text AS Mensaje, m.Mensaje_FecEnvio AS Fecha 
+                      FROM Tbl_Mensajes m INNER JOIN Tbl_Usuarios u_emisor ON m.Mensaje_RemitenteId = u_emisor.UsuarioId 
+                      INNER JOIN Tbl_Usuarios u_receptor ON m.Mensaje_DestinatarioId = u_receptor.UsuarioId WHERE Mensaje_RemitenteId = ?`;
+  } else if (tipo === 'recibidos') {
+    sqlLeerMensajes = `SELECT u_emisor.Usuario_User, u_receptor.Usuario_User, m.Mensaje_Text, m.Mensaje_FecEnvio FROM Tbl_Mensajes m 
+                        INNER JOIN Tbl_Usuarios u_emisor ON m.Mensaje_RemitenteId = u_emisor.UsuarioId
+                        INNER JOIN Tbl_Usuarios u_receptor ON m.Mensaje_DestinatarioId = u_receptor.UsuarioId WHERE Mensaje_DestinatarioId = ?`;
+  } else {
+    return res.status(400).send({ success: false, message: 'Tipo de mensaje inválido.' });
+  }
+  try {
+    const [result] = await db.query(sqlLeerMensajes, [usuario_id]);
+    res.send({ success: true, mensajes: result });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'Error al leer los mensajes.' });
+  }
+});
 
 
-//CHAT
-//
 
 //INICIAR EL SERVIDOR
 app.listen(PORT, () => {
