@@ -41,7 +41,7 @@ app.get("/", (req, res) => {
   res.send("Bienvenido a la API");
 });
 
-//Ruta para agregar usuarios
+//AGREGAR USUARIOS
 app.post("/RegistroUsuarios", async (req, res) => {
   const {
     Nombre,
@@ -50,22 +50,20 @@ app.post("/RegistroUsuarios", async (req, res) => {
     GeneroId,
     FecNac,
     Telefono,
-    TipoUsuarioId,
     Email,
-    User,
     Password,
   } = req.body;
   try{
     //Verificar si ya existe el usuario
-    const sqlCheckUsuario = "SELECT 1 FROM Tbl_Usuarios u WHERE u.Usuario_User = ?";
-    const [existingUser] = await db.query(sqlCheckUsuario, [User]);
+    const sqlCheckUsuario = "SELECT 1 FROM Tbl_Usuarios u WHERE u.Usuario_Email = ?";
+    const [existingUser] = await db.query(sqlCheckUsuario, [Email]);
     if (existingUser.length > 0) {
       return res.status(400).json({ error: "El usuario ya existe" });
     }
     await db.beginTransaction(); //Inicia la transacción
     const hashedPassword = await hashPassword(Password); //Hasheo de contraseña
-    const sqlUsuario = `INSERT INTO Tbl_Usuarios(Usuario_TipoUsuarioId, Usuario_User, Usuario_Password, Usuario_Email, Usuario_Status) VALUES (?,?,?,?,1)`;
-    const [usuarioResult] = await db.query(sqlUsuario, [TipoUsuarioId,User,hashedPassword,Email]);
+    const sqlUsuario = `INSERT INTO Tbl_Usuarios(Usuario_TipoUsuarioId, Usuario_Password, Usuario_Email, Usuario_Status) VALUES (2,?,?,1)`;
+    const [usuarioResult] = await db.query(sqlUsuario, [hashedPassword,Email]);
     const UserId = usuarioResult.insertId; //Se obtiene el id ingresado
     const sqlPersona = `INSERT INTO Tbl_Persona (Persona_Nombre, Persona_APaterno, Persona_AMaterno, Persona_GeneroId, Persona_FecNac, Persona_Telefono, Persona_UsuarioId, Persona_Status) 
                         VALUES (?,?,?,?,?,?,?,1)`;
@@ -79,12 +77,13 @@ app.post("/RegistroUsuarios", async (req, res) => {
   }
 });
 
+//LOGIN
 app.post("/Login", async (req, res) => {
-  const { User, Password } = req.body;
+  const { Email, Password } = req.body;
   const query = `SELECT p.PersonaId, p.Persona_UsuarioId, u.Usuario_Password, p.Persona_Nombre, ct.Rol_Nombre FROM Tbl_Usuarios u INNER JOIN Tbl_Persona p 
-                  ON u.UsuarioId = p.Persona_UsuarioId INNER JOIN Tbl_Cat_Rol ct ON ct.RolId = u.Usuario_TipoUsuarioId WHERE Usuario_User = ?`;
+                  ON u.UsuarioId = p.Persona_UsuarioId INNER JOIN Tbl_Cat_Rol ct ON ct.RolId = u.Usuario_TipoUsuarioId WHERE Usuario_Email = ?`;
   try{
-    const [results] = await db.query(query, [User]);
+    const [results] = await db.query(query, [Email]);
     if (results.length === 0) {  //Si el usuario no existe
       return res.status(400).json({ error: "Usuario no encontrado" });
     }
@@ -105,9 +104,10 @@ app.post("/Login", async (req, res) => {
   }
 });
 
+//OBTENER TODOS LOS USUARIOS
 app.get("/obtenerUsuarios", async (req, res) => {
   const query = `SELECT CONCAT(p.Persona_Nombre,' ',p.Persona_APaterno,' ',p.Persona_AMaterno) AS Nombre, g.Genero_Nombre AS Genero, DATE_FORMAT(Persona_FecNac, '%d-%m-%Y') AS Nacimiento,
-                  p.Persona_Telefono AS Telefono, u.Usuario_Email AS Correo, u.Usuario_User AS Usuario, r.Rol_Nombre AS Tipo
+                  p.Persona_Telefono AS Telefono, u.Usuario_Email AS Correo, r.Rol_Nombre AS Tipo
                   FROM Tbl_Persona p INNER JOIN Tbl_Usuarios u ON p.Persona_UsuarioId = u.UsuarioId
                   INNER JOIN Tbl_Cat_Generos g ON p.Persona_GeneroId = GeneroId
                   INNER JOIN Tbl_Cat_Rol r ON u.Usuario_TipoUsuarioId = RolId`;
@@ -119,10 +119,11 @@ app.get("/obtenerUsuarios", async (req, res) => {
   }
 });
 
+//OBTENER DATOS DE USUARIO POR ID
 app.get("/obtenerUsuariosById/:id", async (req, res) => {
   const usuarioId = req.params.id; // Obtener el ID desde los parámetros de la URL
   const query = `SELECT CONCAT(p.Persona_Nombre,' ',p.Persona_APaterno,' ',p.Persona_AMaterno) AS Nombre, g.Genero_Nombre AS Genero, DATE_FORMAT(Persona_FecNac, '%d-%m-%Y') AS Nacimiento,
-                  p.Persona_Telefono AS Telefono, u.Usuario_Email AS Correo, u.Usuario_User AS Usuario, u.Usuario_Password AS Contraseña, r.Rol_Nombre AS Tipo
+                  p.Persona_Telefono AS Telefono, u.Usuario_Email AS Correo, u.Usuario_Password AS Contraseña, r.Rol_Nombre AS Tipo
                   FROM Tbl_Persona p INNER JOIN Tbl_Usuarios u ON p.Persona_UsuarioId = u.UsuarioId
                   INNER JOIN Tbl_Cat_Generos g ON p.Persona_GeneroId = GeneroId
                   INNER JOIN Tbl_Cat_Rol r ON u.Usuario_TipoUsuarioId = RolId
@@ -139,6 +140,7 @@ app.get("/obtenerUsuariosById/:id", async (req, res) => {
   }
 });
 
+//MODIFICAR DATOS DE USUARIO
 app.post("/ModificarUsuario", async (req, res) => {
   const {
     PersonaId,
@@ -233,6 +235,10 @@ app.post('/leerMsj', async (req, res) => {
     res.status(500).json({ success: false, message: 'Error al leer los mensajes.' });
   }
 });
+
+//VER EL HISTORIAL DE X USUARIO
+
+//RECORDATORIO DE CITAS
 
 
 
