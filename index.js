@@ -119,6 +119,9 @@ app.get("/obtenerUsuarios", async (req, res) => {
   }
 });
 
+//OBTENER ODONTOLOGOS
+app.get("/obtenerMedicos", async (req, res) => {});
+
 //OBTENER DATOS DE USUARIO POR ID
 app.get("/obtenerUsuariosById/:id", async (req, res) => {
   const usuarioId = req.params.id; // Obtener el ID desde los parámetros de la URL
@@ -131,12 +134,12 @@ app.get("/obtenerUsuariosById/:id", async (req, res) => {
   try{
     const [results] = await db.query(query, [usuarioId]);
     if(results.length === 0){
-      res.status(404).json({ error: "Usuario no encontrado" });
+      return res.status(404).json({ error: "Usuario no encontrado" });
     }
     res.json(results);
   }
   catch(error){
-    res.status(500).json({ error: "Error al obtener usuarios" });
+    return res.status(500).json({ error: "Error al obtener usuarios" });
   }
 });
 
@@ -183,6 +186,24 @@ app.post("/generarCita", async (req, res) => {
   }catch(error){
     await db.rollback();
     res.status(500).json({ error: "Error al ralizar la cita" });
+  }
+});
+
+app.get("/obtenerCitasByPacienteId/:pacienteId", async (req, res) => {
+  const pacienteId = req.params.pacienteId;
+  const query = `SELECT DATE_FORMAT(c.Cita_Fecha, '%d-%m-%Y') AS Fecha, c.Cita_Hora, u.Usuario_Email, s.Servicio_Nombre, ec.EstadosCitas_Nombre FROM Tbl_Citas c 
+                  INNER JOIN Tbl_Medicos m ON c.Cita_MedicoId = m.MedicoId INNER JOIN Tbl_Usuarios u ON m.Medico_UsuarioId = u.UsuarioId
+                  INNER JOIN Tbl_Servicios s ON c.Cita_ServicioId = s.ServicioId INNER JOIN Tbl_Cat_EstadoCitas ec ON c.Cita_EstadoId = ec.EstadosCitasId
+                  INNER JOIN Tbl_Pacientes p ON c.Cita_PacienteId = p.PacienteId
+                  WHERE p.PacienteId = ?`;
+  try{
+    const [results] = await db.query(query, [pacienteId]);
+    if(results.length === 0){
+      return res.status(404).json({ error: "Usuario no encontrado"});
+    }
+    res.json(results);
+  }catch(error){
+    return res.status(500).json({error : "Error al obtener las citas"})
   }
 });
 
