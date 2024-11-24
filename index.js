@@ -1,4 +1,5 @@
 const express = require("express");
+const cors = require("cors");
 const mysql = require("mysql2");
 const bcrypt = require("bcrypt");
 
@@ -10,6 +11,13 @@ const PORT = process.env.PORT || 3000;
 
 //Permitir la interpretacion de JSON en las solicitudes
 app.use(express.json());
+
+// Configuración de CORS
+app.use(cors({
+    origin: 'http://localhost:5173', // Cambia esto al dominio de tu frontend
+    methods: 'GET,POST,PUT,DELETE',
+    allowedHeaders: 'Content-Type',
+}));
 
 //mysql://root:qtVcwAfqztQfpeMLIEQmxlJFcHMojlRK@autorack.proxy.rlwy.net:38940/railway
 
@@ -199,7 +207,7 @@ app.get("/obtenerCitasByPacienteId/:pacienteId", async (req, res) => {
   try{
     const [results] = await db.query(query, [pacienteId]);
     if(results.length === 0){
-      return res.status(404).json({ error: "Usuario no encontrado"});
+      return res.status(404).json({ error: "Paciente sin citas aún"});
     }
     res.json(results);
   }catch(error){
