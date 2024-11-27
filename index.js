@@ -69,13 +69,21 @@ app.post("/RegistroUsuarios", async (req, res) => {
       return res.status(400).json({ error: "El usuario ya existe" });
     }
     await db.beginTransaction(); //Inicia la transacción
-    const hashedPassword = await hashPassword(Password); //Hasheo de contraseña
+    //Hasheo de contraseña
+    const hashedPassword = await hashPassword(Password);
+    //Insert en la tbl_Usuarios
     const sqlUsuario = `INSERT INTO Tbl_Usuarios(Usuario_TipoUsuarioId, Usuario_Password, Usuario_Email, Usuario_Status) VALUES (2,?,?,1)`;
     const [usuarioResult] = await db.query(sqlUsuario, [hashedPassword,Email]);
-    const UserId = usuarioResult.insertId; //Se obtiene el id ingresado
+    //Se obtiene el id ingresado
+    const UserId = usuarioResult.insertId;
+    //Insert en Tbl_Persona
     const sqlPersona = `INSERT INTO Tbl_Persona (Persona_Nombre, Persona_APaterno, Persona_AMaterno, Persona_GeneroId, Persona_FecNac, Persona_Telefono, Persona_UsuarioId, Persona_Status) 
                         VALUES (?,?,?,?,?,?,?,1)`;
     await db.query(sqlPersona, [Nombre, APaterno, AMaterno, GeneroId, FecNac, Telefono, UserId]);
+    //Insert en Tbl_Pacientes
+    const sqlPaciente = `INSERT INTO Tbl_Pacientes (Paciente_UsuarioId, Paciente_Status) VALUES (?,1)`;
+    await db.query(sqlPaciente, [UserId]);
+    //Se hacen las inserciones
     await db.commit();
     res.status(200).json({ success: true, message: "Usuario registrado exitosamente" }); //Registro correctamente
   }catch(error){
@@ -164,12 +172,14 @@ app.post("/ModificarUsuario", async (req, res) => {
   } = req.body;
   try{
     await db.beginTransaction();
-    const sqlUPersona = `UPDATE Tbl_Persona SET Persona_Nombre = ?, Persona_APaterno = ?, Persona_AMaterno = ?, Persona_Telefono = ? WHERE personaId = ?`;
-    await db.query(sqlUPersona, [NewNombre,NewAPaterno,NewAMaterno,NewTelefono,PersonaId])
     const NewHashedPass = await hashPassword(NewPassword); //Hasheo de contraseña
-    const sqlUUsuario = `UPDATE Tbl_Usuarios SET Usuario_Password = ?, Usuario_Email = ? 
-                          WHERE UsuarioId = (SELECT Persona_UsuarioId FROM Tbl_Persona WHERE PersonaId = ?)`;
+    const sqlUUsuario = `UPDATE Tbl_Usuarios SET Usuario_Password = ?, Usuario_Email = ? WHERE UsuarioId = ?`;
     await db.query(sqlUUsuario, [NewHashedPass,NewCorreo,PersonaId])
+
+    const sqlUPersona = `UPDATE Tbl_Persona SET Persona_Nombre = ?, Persona_APaterno = ?, Persona_AMaterno = ?, Persona_Telefono = ? 
+                        WHERE personaId = (SELECT UsuarioId FROM Tbl_Usuarios WHERE UsuarioId = ?)`;
+    await db.query(sqlUPersona, [NewNombre,NewAPaterno,NewAMaterno,NewTelefono,PersonaId])
+
     await db.commit(); //Commit para realizar el UPDATE
     res.status(200).json({ succes: true, message: "Datos modificados correctamente"});
   }catch(error){
