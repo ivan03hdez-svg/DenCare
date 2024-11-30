@@ -212,7 +212,27 @@ app.post("/generarCita", async (req, res) => {
   }
 });
 
-
+app.get("/obtenerCitasByUsuarioId/:UsuarioId", async (req, res) => {
+  const UsuarioId = req.params.UsuarioId;
+  const buscarUsuario = `SELECT PacienteId FROM Tbl_Usuarios u INNER JOIN Tbl_Pacientes p ON p.Paciente_UsuarioId = u.UsuarioId WHERE u.UsuarioId = ?`;
+  const [rows] = await db.query(buscarUsuario, [UsuarioId]);
+  const pacienteId = rows[0]?.PacienteId;
+  if(!pacienteId){
+    return res.status(404).json({ error: "Paciente no encontrado" });
+  }
+  const query = `SELECT per.Persona_Nombre, c.Cita_Fecha, c.Cita_Hora FROM Tbl_Citas c INNER JOIN Tbl_Pacientes p ON c.Cita_PacienteId = p.PacienteId 
+                  INNER JOIN Tbl_Medicos m ON c.Cita_MedicoId = m.MedicoId INNER JOIN Tbl_Usuarios u ON m.Medico_UsuarioId = u.UsuarioId 
+                  INNER JOIN Tbl_Persona per ON per.Persona_UsuarioId = u.UsuarioId WHERE p.PacienteId = ?`;
+  try{
+    const [results] = await db.query(query, [pacienteId]);
+    if(results.length === 0){
+      return res.status(404).json({ error: "No cuentas con citas por el momento"});
+    }
+    res.json(results);
+  }catch(error){
+    return res.status(500).json({error : "Error al obtener las citas"})
+  }
+});
 
 //ENVIAR MENSAJE
 app.post('/enviarMsj', async (req, res) => {
