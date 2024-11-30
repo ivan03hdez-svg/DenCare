@@ -224,9 +224,10 @@ app.get("/obtenerCitasByUsuarioId/:UsuarioId", async (req, res) => {
   if(!pacienteId){
     return res.status(404).json({ error: "Paciente no encontrado" });
   }
-  const query = `SELECT per.Persona_Nombre, FORMAT(c.Cita_Fecha, 'dd-MM-yyyy') AS Cita_Fecha, FORMAT(c.Cita_Hora, 'HH:mm') AS Cita_Hora FROM Tbl_Citas c INNER JOIN Tbl_Pacientes p ON c.Cita_PacienteId = p.PacienteId 
-                  INNER JOIN Tbl_Medicos m ON c.Cita_MedicoId = m.MedicoId INNER JOIN Tbl_Usuarios u ON m.Medico_UsuarioId = u.UsuarioId 
-                  INNER JOIN Tbl_Persona per ON per.Persona_UsuarioId = u.UsuarioId WHERE p.PacienteId = ?`;
+  const query = `SELECT per.Persona_Nombre,DATE_FORMAT(c.Cita_Fecha, '%d-%m-%Y') AS Cita_Fecha, DATE_FORMAT(c.Cita_Hora, '%H:%i') AS Cita_Hora FROM Tbl_Citas c 
+                  INNER JOIN Tbl_Pacientes p ON c.Cita_PacienteId = p.PacienteId INNER JOIN Tbl_Medicos m ON c.Cita_MedicoId = m.MedicoId 
+                  INNER JOIN Tbl_Usuarios u ON m.Medico_UsuarioId = u.UsuarioId INNER JOIN Tbl_Persona per ON per.Persona_UsuarioId = u.UsuarioId 
+                  WHERE p.PacienteId = ?`;
   try{
     const [results] = await db.query(query, [pacienteId]);
     if(results.length === 0){
