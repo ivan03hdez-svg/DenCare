@@ -192,14 +192,19 @@ app.post("/ModificarUsuario", async (req, res) => {
 app.post("/generarCita", async (req, res) => {
   const { 
     usuarioId, 
-    medicoId, 
     fecha, 
     hora,
     servicioId
   } = req.body;
-  const Cita = `INSERT INTO Tbl_Citas (Cita_PacienteId, Cita_MedicoId, Cita_Fecha, Cita_Hora, Cita_ServicioId, Cita_EstadoId) VALUES (?,?,?,?,?,?)`;
+  const buscarUsuario = `SELECT PacienteId FROM Tbl_Usuarios u INNER JOIN Tbl_Pacientes p ON p.Paciente_UsuarioId = u.UsuarioId WHERE u.UsuarioId = ?`;
   try{
-    await db.query(Cita, [usuarioId, medicoId, fecha, hora, servicioId, 3]);
+    const [rows] = await db.query(buscarUsuario, [usuarioId]);
+    const pacienteId = rows[0]?.PacienteId;
+    if(!pacienteId){
+      return res.status(404).json({ error: "Paciente no encontrado" });
+    }
+    const Cita = `INSERT INTO Tbl_Citas (Cita_PacienteId, Cita_MedicoId, Cita_Fecha, Cita_Hora, Cita_ServicioId, Cita_EstadoId) VALUES (?,1,?,?,?,3)`;
+    await db.query(Cita, [pacienteId, fecha, hora, servicioId, 3]);
     res.status(200).json({ succes:true, message: "Cita realizada" });
   }catch(error){
     await db.rollback();
@@ -207,49 +212,6 @@ app.post("/generarCita", async (req, res) => {
   }
 });
 
-//OBTENER CITA POR EL USUSARIO
-app.get("/obtenerCitasByPacienteId/:UsuarioId", async (req, res) => {
-  const UsuarioId = req.params.UsuarioId;
-  const query = `
-    SELECT c.CitaId, p.Persona_Nombre, c.Cita_Fecha, c.Cita_Hora, s.Servicio_Nombre, ec.EstadosCitas_Nombre 
-    FROM Tbl_Citas c 
-    INNER JOIN Tbl_Usuarios us ON c.Cita_PacienteId = us.UsuarioId 
-    INNER JOIN Tbl_Usuarios u ON c.Cita_MedicoId = u.UsuarioId 
-    INNER JOIN Tbl_Persona p ON p.Persona_UsuarioId = u.UsuarioId 
-    INNER JOIN Tbl_Servicios s ON c.Cita_ServicioId = s.ServicioId 
-    INNER JOIN Tbl_Cat_EstadoCitas ec ON c.Cita_EstadoId = ec.EstadosCitasId 
-    WHERE us.UsuarioId = ? AND ec.EstadosCitasId = 3`;
-
-  const queryUpdate = `
-    UPDATE Tbl_Citas 
-    SET Cita_EstadoId = 4 
-    WHERE CitaId = ?`;
-
-  try {
-    const [results] = await db.query(query, [UsuarioId]);
-
-    if (results.length === 0) {
-      return res.status(404).json({ error: "Aún no cuentas con citas" });
-    }
-
-    const now = new Date();
-
-    // Procesar citas vencidas
-    for (const cita of results) {
-      const citaFecha = new Date(cita.Cita_Fecha);
-      if (citaFecha < now) {
-        // Actualizar estado en la base de datos
-        await db.query(queryUpdate, [cita.CitaId]);
-      }
-    }
-
-    // Devolver todas las citas
-    res.json(results);
-  } catch (error) {
-    console.error(error);
-    return res.status(500).json({ error: "Error al obtener las citas" });
-  }
-});
 
 
 //ENVIAR MENSAJE
