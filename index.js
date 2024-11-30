@@ -45,10 +45,6 @@ db.connect((err) => {
   }
 });
 
-app.get("/", (req, res) => {
-  res.send("Bienvenido a la API");
-});
-
 //AGREGAR USUARIOS
 app.post("/RegistroUsuarios", async (req, res) => {
   const {
@@ -162,23 +158,30 @@ app.get("/obtenerUsuariosById/:id", async (req, res) => {
 //MODIFICAR DATOS DE USUARIO
 app.post("/ModificarUsuario", async (req, res) => {
   const {
-    PersonaId,
-    NewNombre,
-    NewAPaterno,
-    NewAMaterno,
+    UsuarioId,
     NewTelefono,
     NewCorreo,
     NewPassword,
   } = req.body;
   try{
     await db.beginTransaction();
-    const NewHashedPass = await hashPassword(NewPassword); //Hasheo de contraseña
-    const sqlUUsuario = `UPDATE Tbl_Usuarios SET Usuario_Password = ?, Usuario_Email = ? WHERE UsuarioId = ?`;
-    await db.query(sqlUUsuario, [NewHashedPass,NewCorreo,PersonaId])
 
-    const sqlUPersona = `UPDATE Tbl_Persona SET Persona_Nombre = ?, Persona_APaterno = ?, Persona_AMaterno = ?, Persona_Telefono = ? 
-                        WHERE personaId = (SELECT UsuarioId FROM Tbl_Usuarios WHERE UsuarioId = ?)`;
-    await db.query(sqlUPersona, [NewNombre,NewAPaterno,NewAMaterno,NewTelefono,PersonaId])
+    if(NewPassword){
+      const NewHashedPass = await hashPassword(NewPassword); //Hasheo de contraseña
+      const sqlUUsuario = `UPDATE Tbl_Usuarios SET Usuario_Password = ?, Usuario_Email = ? WHERE UsuarioId = ?`;
+      await db.query(sqlUUsuario, [NewHashedPass,NewCorreo,UsuarioId])
+    }else{
+      const sqlUUsuario = `UPDATE Tbl_Usuarios SET Usuario_Email = ? WHERE UsuarioId = ?`;
+      await db.query(sqlUUsuario, [NewCorreo,UsuarioId])
+    }
+    const buscarUsuario = `SELECT p.PersonaId FROM Tbl_Persona p INNER JOIN Tbl_Usuarios u ON p.Persona_UsuarioId = u.UsuarioId WHERE u.UsuarioId = ?`;
+    const [rows] = await db.query(buscarUsuario, [UsuarioId]);
+    const personaId = rows[0]?.PersonaId;
+    if(!personaId){
+      return res.status(404).json({ error: "Persona no encontrado" });
+    }
+    const sqlUPersona = `UPDATE Tbl_Persona SET Persona_Telefono = ? WHERE personaId = ?`;
+    await db.query(sqlUPersona, [NewTelefono,personaId])
 
     await db.commit(); //Commit para realizar el UPDATE
     res.status(200).json({ succes: true, message: "Datos modificados correctamente"});
@@ -212,6 +215,7 @@ app.post("/generarCita", async (req, res) => {
   }
 });
 
+//OBTENER CITAS POR ID DE USUARIO
 app.get("/obtenerCitasByUsuarioId/:UsuarioId", async (req, res) => {
   const UsuarioId = req.params.UsuarioId;
   const buscarUsuario = `SELECT PacienteId FROM Tbl_Usuarios u INNER JOIN Tbl_Pacientes p ON p.Paciente_UsuarioId = u.UsuarioId WHERE u.UsuarioId = ?`;
