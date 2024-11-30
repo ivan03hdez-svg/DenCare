@@ -224,7 +224,7 @@ app.get("/obtenerCitasByUsuarioId/:UsuarioId", async (req, res) => {
   if(!pacienteId){
     return res.status(404).json({ error: "Paciente no encontrado" });
   }
-  const query = `SELECT per.Persona_Nombre, c.Cita_Fecha, c.Cita_Hora FROM Tbl_Citas c INNER JOIN Tbl_Pacientes p ON c.Cita_PacienteId = p.PacienteId 
+  const query = `SELECT per.Persona_Nombre, FORMAT(c.Cita_Fecha, 'dd-MM-yyyy') AS Cita_Fecha, FORMAT(c.Cita_Hora, 'HH:mm') AS Cita_Hora FROM Tbl_Citas c INNER JOIN Tbl_Pacientes p ON c.Cita_PacienteId = p.PacienteId 
                   INNER JOIN Tbl_Medicos m ON c.Cita_MedicoId = m.MedicoId INNER JOIN Tbl_Usuarios u ON m.Medico_UsuarioId = u.UsuarioId 
                   INNER JOIN Tbl_Persona per ON per.Persona_UsuarioId = u.UsuarioId WHERE p.PacienteId = ?`;
   try{
@@ -241,13 +241,13 @@ app.get("/obtenerCitasByUsuarioId/:UsuarioId", async (req, res) => {
 //ENVIAR MENSAJE
 app.post('/enviarMsj', async (req, res) => {
   const { 
-    emisor_id, 
-    receptor_id, 
+    remitenteId, 
+    destinatarioId, 
     mensaje 
   } = req.body;
 
-  if (!emisor_id || !receptor_id || !mensaje) {
-    return res.status(400).send({ success: false, message: 'Todos los campos son obligatorios.' });
+  if (mensaje) {
+    return res.status(400).send({ success: false, message: 'No puede estar vacio' });
   }
   const sqlEnviar = 'INSERT INTO Tbl_Mensajes (Mensaje_RemitenteId, Mensaje_DestinatarioId, Mensaje_Text, Mensaje_FecEnvio) VALUES (?, ?, ?, NOW())';
 try {
