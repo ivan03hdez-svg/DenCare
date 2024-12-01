@@ -305,20 +305,32 @@ app.get("/mensajes/enviado/:UsuarioId", async (req, res) => {
   }
 });
 
-app.get("/mensajes/recibidos/:UsuarioId", async (req,res) => {
+app.get("/mensajes/recibidos/:UsuarioId", async (req, res) => {
   const usuarioId = req.params.UsuarioId;
-  const query = `SELECT m.Mensaje_DestinatarioId, m.Mensaje_Text, m.Mensaje_FecEnvio FROM Tbl_Mensajes m INNER JOIN Tbl_Usuarios u 
-                ON m.Mensaje_DestinatarioId = u.UsuarioId WHERE u.UsuarioId = ?`;
-  try{
+
+  // Validar que UsuarioId sea un número
+  if (isNaN(usuarioId)) {
+    return res.status(400).json({ error: "El ID del usuario debe ser un número válido." });
+  }
+
+  const query = `SELECT m.Mensaje_Text, DATE_FORMAT(m.Mensaje_FecEnvio, '%d-%m-%Y') AS FechaEnvio, 
+      DATE_FORMAT(m.Mensaje_FecEnvio, '%h:%i %p') AS HoraEnvio,
+      remitente.UsuarioId AS RemitenteId, CONCAT(p.Persona_Nombre, ' ', p.Persona_APaterno, ' ', p.Persona_AMaterno) AS RemitenteNombre
+      FROM Tbl_Mensajes m INNER JOIN Tbl_Usuarios destinatario ON m.Mensaje_DestinatarioId = destinatario.UsuarioId
+      INNER JOIN Tbl_Usuarios remitente ON m.Mensaje_RemitenteId = remitente.UsuarioId INNER JOIN Tbl_Persona p ON remitente.UsuarioId = p.Persona_UsuarioId
+      WHERE destinatario.UsuarioId = ?`;
+  try {
     const [result] = await db.query(query, [usuarioId]);
-    if(result.length === 0){
-      return res.status(404).json({ error: "Sin mensajes por el momento"});
+    if (result.length === 0) {
+      return res.status(404).json({ error: "Sin mensajes recibidos por el momento." });
     }
     res.json(result);
-  }catch(error){
-    return res.status(500).json({error : "Error al obtener las citas"})
+  } catch (error) {
+    console.error("Error al obtener los mensajes recibidos:", error);
+    return res.status(500).json({ error: "Error al obtener los mensajes recibidos." });
   }
 });
+
 
 //GENERAR HISTORIAL DE UN USUARIO 
 
