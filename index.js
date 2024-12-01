@@ -300,7 +300,22 @@ app.post('/leerMsj', async (req, res) => {
 });
 
 //VER EL HISTORIAL DE X USUARIO
-
+app.get("/obtenerHistorialById/:UsuarioId", async (req,res) => {
+  const usuarioId = req.params.UsuarioId;
+  const query = `SELECT t.Tratamiento_Nombre, d.Diagnostico_Nombre, r.Receta_Medicamento, r.Receta_Dosis, rec.Recomendacion_Texto FROM Tbl_HistorialMedico hm INNER JOIN Tbl_Tratamientos t ON t.Tratamiento_HistorialId = hm.HistorialId 
+                  INNER JOIN Tbl_Diagnosticos d ON d.Diagnostico_HistorialId = hm.HistorialId INNER JOIN Tbl_Recetas r ON r.Receta_HistorialId = hm.HistorialId
+                  INNER JOIN Tbl_Recomendaciones rec ON rec.Recomendacion_HistorialId = hm.HistorialId INNER JOIN Tbl_Pacientes pa ON hm.Historial_PacienteId = pa.PacienteId
+                  INNER JOIN Tbl_Usuarios u ON pa.Paciente_UsuarioId = u.UsuarioId WHERE u.UsuarioId = ?`;
+  try{
+    const [results] = await db.query(query, [usuarioId]);
+    if(results.length === 0){
+      return res.status(404).json({ error: "Sin historial por el momento"});
+    }
+    res.json(results);
+  }catch(error){
+    return res.status(500).json({error : "Error al obtener las citas"})
+  }
+});
 //RECORDATORIO DE CITAS
 
 
