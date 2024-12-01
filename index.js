@@ -143,6 +143,18 @@ app.get("/obtenerMedicos", async (req, res) => {
   }
 });
 
+//OBTENER PACIENTES
+app.get('/obtenesPacientes', async (req,res)=> {
+  const query = `SELECT p.PersonaId, p.Persona_Nombre FROM Tbl_Pacientes pa INNER JOIN Tbl_Usuarios u ON pa.Paciente_UsuarioId = u.UsuarioId 
+                  INNER JOIN Tbl_Persona p ON p.Persona_UsuarioId = u.UsuarioId`;
+  try{
+    const [results] = await db.query(query);
+    res.json(results);
+  }catch(error){
+    res.status(500).json({ error: "Error al obtener los pacientes" });
+  }
+});
+
 //OBTENER DATOS DE USUARIO POR ID
 app.get("/obtenerUsuariosById/:id", async (req, res) => {
   const usuarioId = req.params.id; // Obtener el ID desde los parámetros de la URL
@@ -251,19 +263,26 @@ app.get("/obtenerCitasByUsuarioId/:UsuarioId", async (req, res) => {
 //ENVIAR MENSAJE
 app.post('/enviarMsj', async (req, res) => {
   const { 
-    remitenteId, 
-    destinatarioId, 
+    UsuarioId,  //RemitenteId
+    nombreDestino,  //DestinatarioId
     mensaje 
   } = req.body;
-
+  //BUSCAR ID DE USUARIO
+  const buscarUsuarioId = `SELECT u.UsuarioId FROM Tbl_Persona p INNER JOIN Tbl_Usuarios u ON p.Persona_UsuarioId = u.UsuarioId WHERE p.Persona_Nombre = ?`;
+  const [rows] = await db.query(buscarUsuarioId, [nombreDestino]);
+  const destinoId = rows[0]?.UsuarioId;
+  if(!destinoId){
+    return res.status(404).json({ error: "Usuario no encontrado" });
+  }
+  //VALIDAR QUE EXISTA UN MENSAJE
   if (!mensaje) {
     return res.status(400).send({ success: false, message: 'No puede estar vacio' });
   }
-  
+  // INSERTAR EN LA TABLA MENSAJES
   const sqlEnviar = 'INSERT INTO Tbl_Mensajes (Mensaje_RemitenteId, Mensaje_DestinatarioId, Mensaje_Text, Mensaje_FecEnvio) VALUES (?, ?, ?, NOW())';
 try {
-    const [result] = await db.query(sqlEnviar, [emisor_id, receptor_id, mensaje]);
-    res.send({ success: true, message: 'Mensaje enviado con éxito.', mensaje_id: result.insertId });
+    const [result] = await db.query(sqlEnviar, [UsuarioId, destinoId, mensaje]);
+    res.send({ success: true, message: 'Mensaje enviado con éxito.'});
   } catch (error) {
     await db.rollback();
     res.status(500).json({ success: false, message: 'Error al enviar el mensaje.' });
