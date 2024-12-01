@@ -290,33 +290,37 @@ try {
 });
 
 //LEER EL MENSAJE
-app.post('/leerMsj', async (req, res) => {
-  const { 
-    usuario_id, 
-    tipo //enviados o recibidos
-  } = req.body;
-  if (!usuario_id || !tipo) {
-    return res.status(400).send({ success: false, message: 'Faltan parámetros.' });
-  }
-  let sqlLeerMensajes;
-  if (tipo === 'enviados') {
-    sqlLeerMensajes = `SELECT u_emisor.Usuario_User AS Envia, u_receptor.Usuario_User AS Recibe, m.Mensaje_Text AS Mensaje, m.Mensaje_FecEnvio AS Fecha 
-                      FROM Tbl_Mensajes m INNER JOIN Tbl_Usuarios u_emisor ON m.Mensaje_RemitenteId = u_emisor.UsuarioId 
-                      INNER JOIN Tbl_Usuarios u_receptor ON m.Mensaje_DestinatarioId = u_receptor.UsuarioId WHERE Mensaje_RemitenteId = ?`;
-  } else if (tipo === 'recibidos') {
-    sqlLeerMensajes = `SELECT u_emisor.Usuario_User, u_receptor.Usuario_User, m.Mensaje_Text, m.Mensaje_FecEnvio FROM Tbl_Mensajes m 
-                        INNER JOIN Tbl_Usuarios u_emisor ON m.Mensaje_RemitenteId = u_emisor.UsuarioId
-                        INNER JOIN Tbl_Usuarios u_receptor ON m.Mensaje_DestinatarioId = u_receptor.UsuarioId WHERE Mensaje_DestinatarioId = ?`;
-  } else {
-    return res.status(400).send({ success: false, message: 'Tipo de mensaje inválido.' });
-  }
-  try {
-    const [result] = await db.query(sqlLeerMensajes, [usuario_id]);
-    res.send({ success: true, mensajes: result });
-  } catch (error) {
-    res.status(500).json({ success: false, message: 'Error al leer los mensajes.' });
+app.get("/mensajes/enviado/:UsuarioId", async (req, res) => {
+  const usuarioId = req.params.UsuarioId;
+  const query = `SELECT m.Mensaje_Text, DATE_FORMAT(m.Mensaje_FecEnvio, '%d-%m-%Y %H:%i %p') AS Fecha_Envio FROM Tbl_Mensajes m INNER JOIN Tbl_Usuarios u ON m.Mensaje_RemitenteId = u.UsuarioId 
+                  WHERE u.UsuarioId = ?`;
+  try{
+    const [result] = await db.query(query, [usuarioId]);
+    if(result.length === 0){
+      return res.status(404).json({ error: "Sin mensajes por el momento"});
+    }
+    res.json(result);
+  }catch(error){
+    return res.status(500).json({error : "Error al obtener las citas"})
   }
 });
+
+app.get("/mensajes/recibidos/:UsuarioId", async (req,res) => {
+  const usuarioId = req.params.UsuarioId;
+  const query = `SELECT m.Mensaje_DestinatarioId, m.Mensaje_Text, m.Mensaje_FecEnvio FROM Tbl_Mensajes m INNER JOIN Tbl_Usuarios u 
+                ON m.Mensaje_DestinatarioId = u.UsuarioId WHERE u.UsuarioId = ?`;
+  try{
+    const [result] = await db.query(query, [usuarioId]);
+    if(result.length === 0){
+      return res.status(404).json({ error: "Sin mensajes por el momento"});
+    }
+    res.json(result);
+  }catch(error){
+    return res.status(500).json({error : "Error al obtener las citas"})
+  }
+});
+
+//GENERAR HISTORIAL DE UN USUARIO 
 
 //VER EL HISTORIAL DE X USUARIO
 app.get("/obtenerHistorialById/:UsuarioId", async (req,res) => {
