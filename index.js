@@ -132,7 +132,16 @@ app.get("/obtenerUsuarios", async (req, res) => {
 });
 
 //OBTENER ODONTOLOGOS
-app.get("/obtenerMedicos", async (req, res) => {});
+app.get("/obtenerMedicos", async (req, res) => {
+  const query = `SELECT m.MedicoId, p.Persona_Nombre FROM Tbl_Medicos m INNER JOIN Tbl_Usuarios u ON m.Medico_UsuarioId = u.UsuarioId 
+                  INNER JOIN Tbl_Persona p ON p.Persona_UsuarioId = u.UsuarioId;`;
+  try{
+    const [results] = await db.query(query);
+    res.json(results);
+  }catch(error){
+    res.status(500).json({ error: "Error al obtener los medicos" });
+  }
+});
 
 //OBTENER DATOS DE USUARIO POR ID
 app.get("/obtenerUsuariosById/:id", async (req, res) => {
@@ -247,9 +256,10 @@ app.post('/enviarMsj', async (req, res) => {
     mensaje 
   } = req.body;
 
-  if (mensaje) {
+  if (!mensaje) {
     return res.status(400).send({ success: false, message: 'No puede estar vacio' });
   }
+  
   const sqlEnviar = 'INSERT INTO Tbl_Mensajes (Mensaje_RemitenteId, Mensaje_DestinatarioId, Mensaje_Text, Mensaje_FecEnvio) VALUES (?, ?, ?, NOW())';
 try {
     const [result] = await db.query(sqlEnviar, [emisor_id, receptor_id, mensaje]);
