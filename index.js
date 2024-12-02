@@ -331,8 +331,49 @@ app.get("/mensajes/recibidos/:UsuarioId", async (req, res) => {
   }
 });
 
-
 //GENERAR HISTORIAL DE UN USUARIO 
+app.post("/generarHistorial", async (req,res) => {
+    const {
+    NombrePaciente, //UsuarioId 
+    Tratamiento,
+    Diagnostico,
+    Recomendacion,
+    Medicamento,
+    Dosis,
+  } = req.body;
+    //Buscamos el id del paciente
+  const buscarPacienteId = `SELECT pa.PacienteId FROM Tbl_Persona p INNER JOIN Tbl_Usuarios u ON p.Persona_UsuarioId = u.UsuarioId 
+                          INNER JOIN Tbl_Pacientes pa ON pa.Paciente_UsuarioId = u.UsuarioId WHERE p.Persona_Nombre = ?`;
+  try{
+    const [rows] = await db.query(buscarPacienteId, [NombrePaciente]);
+    const pacienteId = rows[0]?.PacienteId;
+    if(!pacienteId){
+      return res.status(404).json({ error: "Paciente no encontrado" });
+    }
+    //Hacemos insert en la tabla historial
+    const insertHistorial = `INSERT INTO Tbl_HistorialMedico (Historial_PacienteId, Historial_Detalles) VALUES (?, "")`;
+    const [insertResult] = await db.query(insertHistorial, [pacienteId]);
+    //Obtenemos el ID del historial insertado
+    const historialId = insertResult.insertId;
+    //Hacemos insert en la tabla Tratamiento
+    const insertTratamiento = `INSERT INTO Tbl_Tratamientos (Tratamiento_Nombre, Tratamiento_Descripcion, Tratamiento_HistorialId) VALUES (?,"",?)`;
+    const [inserrT] = await db.query(insertTratamiento, [Tratamiento,historialId]);
+    //Hacemos insert en la tabla Diagnosticos
+    const insertDiagnostico = `INSERT INTO Tbl_Diagnosticos (Diagnostico_Nombre, Diagnostico_Descripcion, Diagnostico_HistorialId) VALUES (?,"",?)`;
+    const [inserrD] = await db.query(insertDiagnostico, [Diagnostico,historialId]);
+    //Hacemos insert en la tabla Recomendaciones
+    const insertRecomendacion = `INSERT INTO Tbl_Recomendaciones (Recomendacion_Texto, Recomendacion_HistorialId) VALUES (?,?)`;
+    const [inserrR] = await db.query(insertRecomendacion, [Recomendacion,historialId]);
+    //Hacemos insert en la tabla Dosis
+    const insertDosis = `INSERT INTO Tbl_Recetas (Receta_Medicamento, Receta_HistorialId, Receta_Dosis) VALUES (?,?,?)`;
+    const [resultDosis] = await db.query(insertDosis, [Medicamento,historialId,Dosis]);
+    res.send({ success: true, message: 'Historial agregado correctamente'});
+  }catch(error){
+    console.error(error);
+    await db.rollback();
+    res.status(500).json({ success: false, message: 'Error al guardar el historial.' });
+  }
+});
 
 //VER EL HISTORIAL DE X USUARIO
 app.get("/obtenerHistorialById/:UsuarioId", async (req,res) => {
