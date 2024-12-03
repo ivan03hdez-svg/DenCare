@@ -385,6 +385,7 @@ app.post("/generarHistorial", async (req,res) => {
     Recomendacion,
     Medicamento,
     Dosis,
+    Frecuencia
   } = req.body;
     //Buscamos el id del paciente
   const buscarPacienteId = `SELECT pa.PacienteId FROM Tbl_Persona p INNER JOIN Tbl_Usuarios u ON p.Persona_UsuarioId = u.UsuarioId 
@@ -396,22 +397,22 @@ app.post("/generarHistorial", async (req,res) => {
       return res.status(404).json({ error: "Paciente no encontrado" });
     }
     //Hacemos insert en la tabla historial
-    const insertHistorial = `INSERT INTO Tbl_HistorialMedico (Historial_PacienteId, Historial_Detalles) VALUES (?, "")`;
+    const insertHistorial = `INSERT INTO Tbl_HistorialMedico (Historial_PacienteId) VALUES (?)`;
     const [insertResult] = await db.query(insertHistorial, [pacienteId]);
     //Obtenemos el ID del historial insertado
     const historialId = insertResult.insertId;
     //Hacemos insert en la tabla Tratamiento
-    const insertTratamiento = `INSERT INTO Tbl_Tratamientos (Tratamiento_Nombre, Tratamiento_Descripcion, Tratamiento_HistorialId) VALUES (?,"",?)`;
+    const insertTratamiento = `INSERT INTO Tbl_Tratamientos (Tratamiento_Nombre, Tratamiento_HistorialId) VALUES (?,?)`;
     const [inserrT] = await db.query(insertTratamiento, [Tratamiento,historialId]);
     //Hacemos insert en la tabla Diagnosticos
-    const insertDiagnostico = `INSERT INTO Tbl_Diagnosticos (Diagnostico_Nombre, Diagnostico_Descripcion, Diagnostico_HistorialId) VALUES (?,"",?)`;
+    const insertDiagnostico = `INSERT INTO Tbl_Diagnosticos (Diagnostico_Nombre, Diagnostico_HistorialId) VALUES (?,?)`;
     const [inserrD] = await db.query(insertDiagnostico, [Diagnostico,historialId]);
     //Hacemos insert en la tabla Recomendaciones
     const insertRecomendacion = `INSERT INTO Tbl_Recomendaciones (Recomendacion_Texto, Recomendacion_HistorialId) VALUES (?,?)`;
     const [inserrR] = await db.query(insertRecomendacion, [Recomendacion,historialId]);
     //Hacemos insert en la tabla Dosis
-    const insertDosis = `INSERT INTO Tbl_Recetas (Receta_Medicamento, Receta_HistorialId, Receta_Dosis) VALUES (?,?,?)`;
-    const [resultDosis] = await db.query(insertDosis, [Medicamento,historialId,Dosis]);
+    const insertDosis = `INSERT INTO Tbl_Recetas (Receta_Medicamento, Receta_HistorialId, Receta_Frecuencia ,Receta_Dosis) VALUES (?,?,?,?)`;
+    const [resultDosis] = await db.query(insertDosis, [Medicamento,historialId,Frecuencia,Dosis]);
     res.send({ success: true, message: 'Historial agregado correctamente'});
   }catch(error){
     console.error(error);
