@@ -89,6 +89,51 @@ app.post("/RegistroUsuarios", async (req, res) => {
   }
 });
 
+//AGREGAR MEDICOS
+app.post('/RegistroMedicos', async (req,res) => {
+    const {
+    Nombre,
+    APaterno,
+    AMaterno,
+    GeneroId,
+    FecNac,
+    Telefono,
+    Email,
+    Password,
+    Especialidad
+  } = req.body;
+  try{
+    //Verificar si ya existe el usuario
+    const sqlCheckUsuario = "SELECT 1 FROM Tbl_Usuarios u WHERE u.Usuario_Email = ?";
+    const [existingUser] = await db.query(sqlCheckUsuario, [Email]);
+    if (existingUser.length > 0) {
+      return res.status(400).json({ error: "El usuario ya existe" });
+    }
+    await db.beginTransaction(); //Inicia la transacción
+    //Hasheo de contraseña
+    const hashedPassword = await hashPassword(Password);
+    //Insert en la tbl_Usuarios
+    const sqlUsuario = `INSERT INTO Tbl_Usuarios(Usuario_TipoUsuarioId, Usuario_Password, Usuario_Email, Usuario_Status) VALUES (3,?,?,1)`;
+    const [usuarioResult] = await db.query(sqlUsuario, [hashedPassword,Email]);
+    //Se obtiene el id ingresado
+    const UserId = usuarioResult.insertId;
+    //Insert en Tbl_Persona
+    const sqlPersona = `INSERT INTO Tbl_Persona (Persona_Nombre, Persona_APaterno, Persona_AMaterno, Persona_GeneroId, Persona_FecNac, Persona_Telefono, Persona_UsuarioId, Persona_Status) 
+                        VALUES (?,?,?,?,?,?,?,1)`;
+    await db.query(sqlPersona, [Nombre, APaterno, AMaterno, GeneroId, FecNac, Telefono, UserId]);
+    //Insert en Tbl_Pacientes
+    const sqlPaciente = `INSERT INTO Tbl_Medicos (Medico_UsuarioId, Medico_Especialidad, Medico_Status) VALUES (?,?,1)`;
+    await db.query(sqlPaciente, [UserId,Especialidad]);
+    //Se hacen las inserciones
+    await db.commit();
+    res.status(200).json({ success: true, message: "Usuario registrado exitosamente" }); //Registro correctamente
+  }catch(error){
+    await db.rollback();
+    console.error("Error en registro:", error);
+    res.status(500).json({ error: "Error al registrar el usuario" });
+  }
+});
+
 //LOGIN
 app.post("/Login", async (req, res) => {
   const { Email, Password } = req.body;
@@ -378,10 +423,11 @@ app.post("/generarHistorial", async (req,res) => {
 //VER EL HISTORIAL DE X USUARIO
 app.get("/obtenerHistorialById/:UsuarioId", async (req,res) => {
   const usuarioId = req.params.UsuarioId;
-  const query = `SELECT t.Tratamiento_Nombre, d.Diagnostico_Nombre, r.Receta_Medicamento, r.Receta_Dosis, rec.Recomendacion_Texto FROM Tbl_HistorialMedico hm INNER JOIN Tbl_Tratamientos t ON t.Tratamiento_HistorialId = hm.HistorialId 
-                  INNER JOIN Tbl_Diagnosticos d ON d.Diagnostico_HistorialId = hm.HistorialId INNER JOIN Tbl_Recetas r ON r.Receta_HistorialId = hm.HistorialId
-                  INNER JOIN Tbl_Recomendaciones rec ON rec.Recomendacion_HistorialId = hm.HistorialId INNER JOIN Tbl_Pacientes pa ON hm.Historial_PacienteId = pa.PacienteId
-                  INNER JOIN Tbl_Usuarios u ON pa.Paciente_UsuarioId = u.UsuarioId WHERE u.UsuarioId = ?`;
+  const query = `SELECT cit.Cita_Fecha, t.Tratamiento_Nombre, d.Diagnostico_Nombre, r.Receta_Medicamento, r.Receta_Dosis, rec.Recomendacion_Texto FROM Tbl_HistorialMedico hm 
+                  INNER JOIN Tbl_Tratamientos t ON t.Tratamiento_HistorialId = hm.HistorialId INNER JOIN Tbl_Diagnosticos d ON d.Diagnostico_HistorialId = hm.HistorialId 
+                  INNER JOIN Tbl_Recetas r ON r.Receta_HistorialId = hm.HistorialId INNER JOIN Tbl_Recomendaciones rec ON rec.Recomendacion_HistorialId = hm.HistorialId 
+                  INNER JOIN Tbl_Pacientes pa ON hm.Historial_PacienteId = pa.PacienteId INNER JOIN Tbl_Usuarios u ON pa.Paciente_UsuarioId = u.UsuarioId 
+                  INNER JOIN Tbl_Citas cit ON pa.PacienteId = cit.Cita_PacienteId WHERE u.UsuarioId = ?`;
   try{
     const [results] = await db.query(query, [usuarioId]);
     if(results.length === 0){
