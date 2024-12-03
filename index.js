@@ -424,7 +424,7 @@ app.post("/generarHistorial", async (req,res) => {
 //VER EL HISTORIAL DE X USUARIO
 app.get("/obtenerHistorialById/:UsuarioId", async (req,res) => {
   const usuarioId = req.params.UsuarioId;
-  const query = `SELECT cit.Cita_Fecha, t.Tratamiento_Nombre, d.Diagnostico_Nombre, r.Receta_Medicamento, r.Receta_Dosis, rec.Recomendacion_Texto FROM Tbl_HistorialMedico hm 
+  const query = `SELECT DATE_FORMAT(cit.Cita_Fecha, '%d-%m-%Y') AS Fecha, t.Tratamiento_Nombre, d.Diagnostico_Nombre, r.Receta_Medicamento, r.Receta_Dosis, rec.Recomendacion_Texto FROM Tbl_HistorialMedico hm 
                   INNER JOIN Tbl_Tratamientos t ON t.Tratamiento_HistorialId = hm.HistorialId INNER JOIN Tbl_Diagnosticos d ON d.Diagnostico_HistorialId = hm.HistorialId 
                   INNER JOIN Tbl_Recetas r ON r.Receta_HistorialId = hm.HistorialId INNER JOIN Tbl_Recomendaciones rec ON rec.Recomendacion_HistorialId = hm.HistorialId 
                   INNER JOIN Tbl_Pacientes pa ON hm.Historial_PacienteId = pa.PacienteId INNER JOIN Tbl_Usuarios u ON pa.Paciente_UsuarioId = u.UsuarioId 
