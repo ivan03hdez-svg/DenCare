@@ -474,7 +474,8 @@ app.post("/generarHistorial", async (req,res) => {
   } = req.body;
     //Buscamos el id del paciente
   const buscarPacienteId = `SELECT pa.PacienteId FROM Tbl_Persona p INNER JOIN Tbl_Usuarios u ON p.Persona_UsuarioId = u.UsuarioId 
-                          INNER JOIN Tbl_Pacientes pa ON pa.Paciente_UsuarioId = u.UsuarioId WHERE p.Persona_Nombre = ?`;
+                          INNER JOIN Tbl_Pacientes pa ON pa.Paciente_UsuarioId = u.UsuarioId 
+                          WHERE CONCAT(p.Persona_Nombre, ' ', p.Persona_AMaterno, ' ', p.Persona_APaterno) = ?`;
   try{
     const [rows] = await db.query(buscarPacienteId, [NombrePaciente]);
     const pacienteId = rows[0]?.PacienteId;
