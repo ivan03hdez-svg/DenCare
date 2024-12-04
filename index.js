@@ -333,7 +333,7 @@ app.get('/obtenerCitaByMedicoId/:UsuarioId', async (req,res) => {
   if(!medicoId){
     return res.status(404).json({ error: "Paciente no encontrado" });
   }
-  const query = `SELECT c.CitaId, CONCAT(p.Persona_Nombre,' ',p.Persona_AMaterno,' ',p.Persona_APaterno) AS Paciente, DATE_FORMAT(c.Cita_Fecha, '%d-%m-%Y') AS Cita_Fecha, 
+  const query = `SELECT c.CitaId, CONCAT(p.Persona_Nombre,' ',p.Persona_APaterno,' ',p.Persona_AMaterno) AS Paciente, DATE_FORMAT(c.Cita_Fecha, '%d-%m-%Y') AS Cita_Fecha, 
                   DATE_FORMAT(c.Cita_Hora, '%H:%i') AS Cita_Hora FROM Tbl_Medicos m INNER JOIN Tbl_Citas c ON c.Cita_MedicoId = m.MedicoId INNER JOIN Tbl_Usuarios u ON m.Medico_UsuarioId = u.UsuarioId
                   INNER JOIN Tbl_Pacientes pa ON c.Cita_PacienteId = pa.PacienteId INNER JOIN Tbl_Usuarios us ON pa.Paciente_UsuarioId = us.UsuarioId
                   INNER JOIN Tbl_Persona p ON p.Persona_UsuarioId = us.UsuarioId 
@@ -357,7 +357,7 @@ app.get('/obtenerCitaFinalizadasByMedicoId/:UsuarioId', async (req,res) => {
   if(!medicoId){
     return res.status(404).json({ error: "Paciente no encontrado" });
   }
-  const query = `SELECT CONCAT(p.Persona_Nombre,' ',p.Persona_AMaterno,' ',p.Persona_APaterno) AS Paciente, DATE_FORMAT(c.Cita_Fecha, '%d-%m-%Y') AS Cita_Fecha
+  const query = `SELECT CONCAT(p.Persona_Nombre,' ',p.Persona_APaterno,' ',p.Persona_AMaterno) AS Paciente, DATE_FORMAT(c.Cita_Fecha, '%d-%m-%Y') AS Cita_Fecha
                   FROM Tbl_Medicos m INNER JOIN Tbl_Citas c ON c.Cita_MedicoId = m.MedicoId INNER JOIN Tbl_Usuarios u ON m.Medico_UsuarioId = u.UsuarioId
                   INNER JOIN Tbl_Pacientes pa ON c.Cita_PacienteId = pa.PacienteId INNER JOIN Tbl_Usuarios us ON pa.Paciente_UsuarioId = us.UsuarioId
                   INNER JOIN Tbl_Persona p ON p.Persona_UsuarioId = us.UsuarioId 
