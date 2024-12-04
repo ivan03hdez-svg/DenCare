@@ -310,10 +310,10 @@ app.get("/obtenerCitasByUsuarioId/:UsuarioId", async (req, res) => {
   if(!pacienteId){
     return res.status(404).json({ error: "Paciente no encontrado" });
   }
-  const query = `SELECT per.Persona_Nombre,DATE_FORMAT(c.Cita_Fecha, '%d-%m-%Y') AS Cita_Fecha, DATE_FORMAT(c.Cita_Hora, '%H:%i') AS Cita_Hora FROM Tbl_Citas c 
+  const query = `SELECT c.CitaId, per.Persona_Nombre,DATE_FORMAT(c.Cita_Fecha, '%d-%m-%Y') AS Cita_Fecha, DATE_FORMAT(c.Cita_Hora, '%H:%i') AS Cita_Hora FROM Tbl_Citas c 
                   INNER JOIN Tbl_Pacientes p ON c.Cita_PacienteId = p.PacienteId INNER JOIN Tbl_Medicos m ON c.Cita_MedicoId = m.MedicoId 
                   INNER JOIN Tbl_Usuarios u ON m.Medico_UsuarioId = u.UsuarioId INNER JOIN Tbl_Persona per ON per.Persona_UsuarioId = u.UsuarioId 
-                  WHERE p.PacienteId = ?`;
+                  WHERE p.PacienteId = ? AND c.Cita_EstadoId = 3`;
   try{
     const [results] = await db.query(query, [pacienteId]);
     if(results.length === 0){
@@ -323,6 +323,34 @@ app.get("/obtenerCitasByUsuarioId/:UsuarioId", async (req, res) => {
   }catch(error){
     return res.status(500).json({error : "Error al obtener las citas"})
   }
+});
+
+app.get('/obtenerCitaByMedicoId/:UsuarioId', async (req,res) => {
+  const UsuarioId = req.params.UsuarioId;
+  const buscarUsuario = `SELECT m.MedicoId FROM Tbl_Usuarios u INNER JOIN Tbl_Medicos m ON m.Medico_UsuarioId = u.UsuarioId WHERE u.UsuarioId = ?`;
+  const [rows] = await db.query(buscarUsuario, [UsuarioId]);
+  const medicoId = rows[0]?.MedicoId;
+  if(!medicoId){
+    return res.status(404).json({ error: "Paciente no encontrado" });
+  }
+  const query = `SELECT CONCAT(p.Persona_Nombre,' ',p.Persona_AMaterno,' ',p.Persona_APaterno) AS Paciente, DATE_FORMAT(c.Cita_Fecha, '%d-%m-%Y') AS Cita_Fecha, 
+                  DATE_FORMAT(c.Cita_Hora, '%H:%i') AS Cita_Hora FROM Tbl_Medicos m INNER JOIN Tbl_Citas c ON c.Cita_MedicoId = m.MedicoId INNER JOIN Tbl_Usuarios u ON m.Medico_UsuarioId = u.UsuarioId
+                  INNER JOIN Tbl_Pacientes pa ON c.Cita_PacienteId = pa.PacienteId INNER JOIN Tbl_Usuarios us ON pa.Paciente_UsuarioId = us.UsuarioId
+                  INNER JOIN Tbl_Persona p ON p.Persona_UsuarioId = us.UsuarioId 
+                  WHERE m.MedicoId = ? AND c.Cita_EstadoId = 3`;
+  try{
+  const [results] = await db.query(query, [medicoId]);
+  if(results.length === 0){
+    return res.status(404).json({ error: "No cuentas con citas pendientes"});
+  }
+  res.json(results);
+  }catch(error){
+    return res.status(500).json({error : "Error al obtener las citas"})
+  }
+});
+
+app.post('/finalizarCita', async (req,res) => {
+  
 });
 
 //ENVIAR MENSAJE
