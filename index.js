@@ -310,7 +310,7 @@ app.get("/obtenerCitasByUsuarioId/:UsuarioId", async (req, res) => {
   if(!pacienteId){
     return res.status(404).json({ error: "Paciente no encontrado" });
   }
-  const query = `SELECT c.CitaId, per.Persona_Nombre,DATE_FORMAT(c.Cita_Fecha, '%d-%m-%Y') AS Cita_Fecha, DATE_FORMAT(c.Cita_Hora, '%H:%i') AS Cita_Hora FROM Tbl_Citas c 
+  const query = `SELECT per.Persona_Nombre AS Medico,DATE_FORMAT(c.Cita_Fecha, '%d-%m-%Y') AS Cita_Fecha, DATE_FORMAT(c.Cita_Hora, '%H:%i') AS Cita_Hora FROM Tbl_Citas c 
                   INNER JOIN Tbl_Pacientes p ON c.Cita_PacienteId = p.PacienteId INNER JOIN Tbl_Medicos m ON c.Cita_MedicoId = m.MedicoId 
                   INNER JOIN Tbl_Usuarios u ON m.Medico_UsuarioId = u.UsuarioId INNER JOIN Tbl_Persona per ON per.Persona_UsuarioId = u.UsuarioId 
                   WHERE p.PacienteId = ? AND c.Cita_EstadoId = 3`;
@@ -333,7 +333,7 @@ app.get('/obtenerCitaByMedicoId/:UsuarioId', async (req,res) => {
   if(!medicoId){
     return res.status(404).json({ error: "Paciente no encontrado" });
   }
-  const query = `SELECT CONCAT(p.Persona_Nombre,' ',p.Persona_AMaterno,' ',p.Persona_APaterno) AS Paciente, DATE_FORMAT(c.Cita_Fecha, '%d-%m-%Y') AS Cita_Fecha, 
+  const query = `SELECT c.CitaId, CONCAT(p.Persona_Nombre,' ',p.Persona_AMaterno,' ',p.Persona_APaterno) AS Paciente, DATE_FORMAT(c.Cita_Fecha, '%d-%m-%Y') AS Cita_Fecha, 
                   DATE_FORMAT(c.Cita_Hora, '%H:%i') AS Cita_Hora FROM Tbl_Medicos m INNER JOIN Tbl_Citas c ON c.Cita_MedicoId = m.MedicoId INNER JOIN Tbl_Usuarios u ON m.Medico_UsuarioId = u.UsuarioId
                   INNER JOIN Tbl_Pacientes pa ON c.Cita_PacienteId = pa.PacienteId INNER JOIN Tbl_Usuarios us ON pa.Paciente_UsuarioId = us.UsuarioId
                   INNER JOIN Tbl_Persona p ON p.Persona_UsuarioId = us.UsuarioId 
@@ -349,9 +349,22 @@ app.get('/obtenerCitaByMedicoId/:UsuarioId', async (req,res) => {
   }
 });
 
-app.post('/finalizarCita', async (req,res) => {
-  
+app.post('/finalizarCita', async (req, res) => {
+  const { citaId } = req.body;
+  const query = `UPDATE Tbl_Citas SET Cita_EstadoId = 4 WHERE CitaId = ?`;
+  try {
+    const [result] = await db.query(query, [citaId]);
+    // Verificar si se actualizó alguna fila
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: "No se encontró una cita con el ID proporcionado" });
+    } 
+    res.json({ message: "Cita finalizada exitosamente" });
+  } catch (error) {
+    // Manejo de errores
+    return res.status(500).json({ error: "Error al finalizar la cita", details: error.message });
+  }
 });
+
 
 //ENVIAR MENSAJE
 app.post('/enviarMsj', async (req, res) => {
