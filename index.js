@@ -161,6 +161,26 @@ app.post("/Login", async (req, res) => {
   }
 });
 
+app.post("/LoginApp", async (req, res) => {
+  const { Email, Password } = req.body;
+  const query = `SELECT * FROM Tbl_Persona p INNER JOIN Tbl_Usuarios u ON p.Persona_UsuarioId = u.UsuarioId WHERE u.Usuario_Email = ?`;
+  try{
+    const [results] = await db.query(query, [Email]);
+    if (results.length === 0) {  //Si el usuario no existe
+      return res.status(400).json({ error: "Usuario no encontrado" });
+    }
+    const user = results[0];
+    // Comparación de contraseñas
+    const isMatch = await bcrypt.compare(Password, user.Usuario_Password);
+    if (!isMatch) {
+      return res.status(401).json({ error: "Contraseña incorrecta" });
+    }
+    res.json(results);
+  }catch(error){
+    return res.status(500).json({ error: "Error al procesar la solicitud" });
+  }
+});
+
 //OBTENER TODOS LOS USUARIOS
 app.get("/obtenerUsuarios", async (req, res) => {
   const query = `SELECT CONCAT(p.Persona_Nombre,' ',p.Persona_APaterno,' ',p.Persona_AMaterno) AS Nombre, g.Genero_Nombre AS Genero, DATE_FORMAT(Persona_FecNac, '%d-%m-%Y') AS Nacimiento,
